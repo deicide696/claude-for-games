@@ -1,6 +1,6 @@
 # Gnomo y las setas
 
-Juego de recolección con vista desde arriba. Diseño completo en docs/diseno.md.
+Plataformas 3D por mundos con AleUnda como protagonista. Diseño completo en docs/diseno.md.
 
 ## Restricciones
 - Todo el juego vive en index.html. Sin librerías, sin imágenes ni audio externos.
