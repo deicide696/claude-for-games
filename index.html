@@ -38,6 +38,18 @@ const PUNTOS_PISOTON = 100;        // se duplica con cada pisotón seguido sin t
 const PUNTOS_TRISQUEL = 1000;
 const PUNTOS_POR_SEGUNDO = 10;     // bonificación por cada segundo que sobra al llegar a la meta
 const AVISO_AMANECER = 60;         // segundos restantes en que suena el aviso y se acelera la música
+const RESCATE_EN_CAIDAS = 2;       // en los primeros N niveles, caer al vacío o al agua solo cuesta un trébol (las hadas rescatan)
+const PUCAS_TRANQUILOS = 1;        // en los primeros N niveles los púcas pasean y no persiguen
+
+// --- Mapa del mundo ---
+const TRISQUELES_PUERTA = 5;       // trisqueles dorados que abren la puerta de piedra hacia el nivel secreto
+const COSTE_DESEO = 30;            // setas que cuesta cada deseo en el pozo (el primero es gratis)
+const BOLSA_MAX = 4;               // objetos que caben en la bolsa
+
+// --- Historia y Lúa (el hada compañera) ---
+const LETRAS_POR_SEGUNDO = 45;     // velocidad a la que aparece el texto de los diálogos
+const LUA_DISTANCIA = 0.9;         // a qué distancia vuela Lúa junto a AleUnda
+const LUA_ALTURA = 2.0;            // y a qué altura
 
 // --- AleUnda: movimiento ---
 const VEL_CAMINAR = 6.2;           // unidades/s caminando
@@ -60,10 +72,10 @@ const VOLTERETA_ENFRIAMIENTO = 0.3;// s de espera entre volteretas
 const VOLTERETA_IMPULSO_AIRE = 7;  // empujón hacia arriba al girar en el aire (una vez por salto)
 const VOLTERETA_EMPUJE = 3.5;      // empujón hacia delante al girar en el suelo
 const INVULNERABLE_GOLPE = 1.6;    // s de parpadeo tras un golpe
-const EMPUJE_GOLPE = 7;            // con qué fuerza sale despedida tras un golpe
+const EMPUJE_GOLPE = 7;            // fuerza del empujón tras un golpe
 const RADIO_ALEUNDA = 0.38;        // radio de colisión
 const ALTO_ALEUNDA = 1.5;          // altura de colisión
-const ESCALON = 0.35;              // sube sola los bordes más bajos que esto
+const ESCALON = 0.35;              // los bordes más bajos que esto se suben sin saltar
 
 // --- Enemigos y objetos ---
 const PUCA_VEL = 2.2;              // patrulla
@@ -71,6 +83,8 @@ const PUCA_VEL_PERSIGUE = 4.4;     // cuando te ve
 const PUCA_VISTA = 6.5;            // distancia a la que te ve
 const PUCA_PERSIGUE = 2.4;         // s que persigue antes de rendirse
 const PUCA_EMBOSCADA = 4.5;        // distancia a la que sale de la tierra el púca escondido
+const PUCA_VEL_TRANQUILO = 1.6;    // velocidad de los púcas en los niveles tranquilos
+const RADIO_CAMINO_HADAS = 3.2;    // distancia a la que se dejan ver los caminos de hadas invisibles
 const FATUO_RADIO = 0.42;          // radio de daño de los fuegos fatuos
 const MUELLE_REBOTE = 21;          // impulso de las setas gigantes
 const CAE_ESPERA = 0.55;           // s que tiembla una plataforma antes de caer
@@ -480,13 +494,14 @@ function humo(x, y, z, tam, c, a = 1) {
 // =====================================================================
 const MOD = {};
 const IDENT = m4();
-function crearModelos() {
-  azar = semilla(42);
-
-  // --- AleUnda: capucha verde puntiaguda, trenzas pelirrojas, torque dorado y su caldero ---
+// AleUnda: capucha puntiaguda, trenzas pelirrojas, torque dorado y su caldero.
+// Se rehace al cambiar de capucha (los colores salen del traje elegido).
+function crearModeloAle() {
+  const t = trajeActual(), T = { capa: hx(t.capa), capaOsc: hx(t.capaOsc), tunica: hx(t.tunica) };
+  borrarMalla(MOD.aleCuerpo); borrarMalla(MOD.alePierna); borrarMalla(MOD.aleBrazo);
   MOD.aleCuerpo = hacer(M => {
-    M.cilindro(mat(0, 0.4, 0, 0, 0.36, 0.58, 0.32), C.tunica, 12, 0.66);              // túnica
-    M.cilindro(mat(0, 0.3, -0.1, 0, 0.42, 0.74, 0.3), C.capaOsc, 12, 0.55);          // capa
+    M.cilindro(mat(0, 0.4, 0, 0, 0.36, 0.58, 0.32), T.tunica, 12, 0.66);              // túnica
+    M.cilindro(mat(0, 0.3, -0.1, 0, 0.42, 0.74, 0.3), T.capaOsc, 12, 0.55);          // capa
     M.cilindro(mat(0, 0.58, 0, 0, 0.335, 0.08, 0.3), C.cinturon, 12, 0.97);          // cinturón
     M.caja(mat(0, 0.62, 0.3, 0, 0.1, 0.09, 0.04), C.oro);                            // hebilla
     M.cilindro(mat(0, 0.96, 0.01, 0, 0.2, 0.06, 0.19), C.oro, 12, 1);                // torque
@@ -505,8 +520,8 @@ function crearModelos() {
         M.esfera(mat(s * x, y, z, 0, r), C.pelo, 8, 6);
       M.esfera(mat(s * 0.28, 0.71, 0.05, 0, 0.045), C.oro, 6, 4);
     }
-    M.cilindro(mat(0, 1.28, -0.02, 0, 0.31, 0.12, 0.31), C.capa, 12, 1);              // borde de la capucha
-    M.cilindro(mat(0, 1.34, -0.04, 0, 0.31, 0.64, 0.31, -0.38), C.capa, 12, 0.02);     // capucha
+    M.cilindro(mat(0, 1.28, -0.02, 0, 0.31, 0.12, 0.31), T.capa, 12, 1);              // borde de la capucha
+    M.cilindro(mat(0, 1.34, -0.04, 0, 0.31, 0.64, 0.31, -0.38), T.capa, 12, 0.02);     // capucha
     M.esfera(mat(0, 1.34 + 0.64 * Math.cos(-0.38), -0.04 + 0.64 * Math.sin(-0.38), 0, 0.055), C.oroClaro, 6, 4);
     M.cilindro(mat(0.34, 0.36, 0.06, 0, 0.12, 0.15, 0.12), C.caldero, 10, 1.12);        // caldero
     M.cilindro(mat(0.34, 0.5, 0.06, 0, 0.14, 0.03, 0.14), hx('#4a4a55'), 10, 1);
@@ -517,9 +532,14 @@ function crearModelos() {
     M.caja(mat(0, -0.37, 0.04, 0, 0.17, 0.14, 0.27), C.bota);
   });
   MOD.aleBrazo = hacer(M => {
-    M.cilindro(mat(0, -0.34, 0, 0, 0.075, 0.36, 0.075), C.tunica, 8, 0.9);
+    M.cilindro(mat(0, -0.34, 0, 0, 0.075, 0.36, 0.075), T.tunica, 8, 0.9);
     M.esfera(mat(0, -0.38, 0, 0, 0.075), C.piel, 8, 6, { suave: true });
   });
+}
+function crearModelos() {
+  azar = semilla(42);
+
+  crearModeloAle();
 
   // --- Púca: liebre negra de ojos dorados ---
   MOD.puca = hacer(M => {
@@ -627,12 +647,22 @@ function crearModelos() {
     M.cilindro(mat(0, 0, 0, 0, 1, 0.25, 1), C.piedra, 16, 1, C.blanco, 0.06);
     for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; M.esfera(mat(Math.cos(a) * 1.05, 0.05, Math.sin(a) * 1.05, a, 0.18, 0.14, 0.14), C.piedraOsc, 5, 3); }
   });
+
+  // --- Lúa, el hada compañera: cuerpecito de luz, vestido de hoja y alas de libélula ---
+  MOD.hada = hacer(M => {
+    M.esfera(mat(0, 0.12, 0, 0, 0.09), hx('#fff3e0'), 8, 6, { suave: true });           // cabeza
+    M.esfera(mat(0, 0.19, -0.02, 0, 0.08, 0.05, 0.08), C.oroClaro, 7, 5);             // pelo
+    M.cilindro(mat(0, -0.12, 0, 0, 0.09, 0.2, 0.09), hx('#9fe8c0'), 7, 0.35);          // vestido
+    for (const s of [-1, 1]) M.esfera(mat(s * 0.035, 0.13, 0.08, 0, 0.012), C.ojo, 4, 3);
+  });
+  MOD.alaD = hacer(M => { M.esfera(mat(0.17, 0.04, 0, 0, 0.17, 0.012, 0.09, 0, 0.35), hx('#d8f6ff'), 8, 4); M.esfera(mat(0.12, -0.06, 0, 0, 0.11, 0.01, 0.06, 0, -0.3), hx('#c0ecff'), 8, 4); });
+  MOD.alaI = hacer(M => { M.esfera(mat(-0.17, 0.04, 0, 0, 0.17, 0.012, 0.09, 0, -0.35), hx('#d8f6ff'), 8, 4); M.esfera(mat(-0.12, -0.06, 0, 0, 0.11, 0.01, 0.06, 0, 0.3), hx('#c0ecff'), 8, 4); });
 }
 
 // =====================================================================
 // SONIDO (Web Audio, todo sintetizado)
 // =====================================================================
-let actx = null, salidaFx = null, salidaMus = null, bufRuido = null, musicaPendiente = null, musica = null, ambSon = null;
+let actx = null, salidaFx = null, salidaMus = null, filtroMus = null, bufRuido = null, musicaPendiente = null, musica = null, ambSon = null;
 function iniciarAudio() {
   if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -647,7 +677,9 @@ function iniciarAudio() {
   retardo.connect(filtro); filtro.connect(realim); realim.connect(retardo); filtro.connect(humedo); humedo.connect(maestro);
   salidaFx = actx.createGain(); salidaFx.connect(maestro);
   const envio = actx.createGain(); envio.gain.value = 0.2; salidaFx.connect(envio); envio.connect(retardo);
-  salidaMus = actx.createGain(); salidaMus.gain.value = VOLUMEN_MUSICA; salidaMus.connect(maestro); salidaMus.connect(retardo);
+  salidaMus = actx.createGain(); salidaMus.gain.value = VOLUMEN_MUSICA;
+  filtroMus = actx.createBiquadFilter(); filtroMus.type = 'lowpass'; filtroMus.frequency.value = 20000;
+  salidaMus.connect(filtroMus); filtroMus.connect(maestro); salidaMus.connect(retardo);
   bufRuido = actx.createBuffer(1, actx.sampleRate, actx.sampleRate);
   const d = bufRuido.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   if (musicaPendiente) { const m = musicaPendiente; musicaPendiente = null; tocarMusica(m); }
@@ -758,11 +790,20 @@ const CANCIONES = {
                    E5 - G5 - B5 - A5 G5 | F#5 - D5 - - - . . | E5 - D5 - C5 - B4 - | E5 - - - - - . . |`, 0.8),
     voz('tambor', 'X . x . X x x .'),
   ] },
-  // Mapa del mundo: vals de arpa
+  // Claro secreto de las hadas: arpa soñadora en mi mayor
+  hadas: { paso: 0.19, voces: [
+    voz('arpa', 'E4 B4 E5 G#5 B5 G#5 | C#4 G#4 C#5 E5 G#5 E5 | A3 E4 A4 C#5 E5 C#5 | B3 F#4 B4 D#5 F#5 D#5', 0.85),
+    voz('flauta', `B5 - - G#5 - - | E5 - - - - - | C#6 - - B5 - - | F#5 - - - - - |
+                   E6 - - C#6 - - | B5 - - G#5 - - | A5 - - F#5 - - | E5 - - - - - |`, 0.7),
+    voz('campana', 'E6 . . . . . . . . . . . | B6 . . . . . . . . . . .', 0.5),
+  ] },
+  // Mapa del mundo: vals de arpa. Gana instrumentos a medida que el bosque despierta
   mapa: { paso: 0.21, voces: [
     voz('arpa', 'D4 A4 D5 F#5 A5 F#5 | G3 D4 G4 B4 D5 B4 | A3 E4 A4 C#5 E5 C#5 | D4 A4 D5 F#5 A5 D6', 0.8),
     voz('flauta', `A5 - - - - - | B5 - - G5 - - | A5 - - E5 - - | F#5 - - - - - |
                    D6 - - - B5 - | G5 - - B5 - - | A5 - - C#6 - - | D6 - - - - - |`, 0.6),
+    voz('bajo', 'D3 . . . . . | G2 . . . . . | A2 . . . . . | D3 . . . . .', 0.7),
+    voz('campana', 'A6 . . . . . . . . . . . | . . . . . . . . . . . . | F#6 . . . . . . . . . . . | . . . . . . . . . . . .', 0.5),
   ] },
 };
 function tocarMusica(nombre) {
@@ -771,8 +812,15 @@ function tocarMusica(nombre) {
   const c = CANCIONES[nombre]; if (!c) return;
   const t = actx.currentTime;
   salidaMus.gain.cancelScheduledValues(t); salidaMus.gain.setValueAtTime(VOLUMEN_MUSICA, t);
-  musica = { nombre, c, t: t + 0.08, i: 0, vel: 1 };
+  let voces = c.voces;
+  if (nombre === 'mapa') {   // con cada nivel completado suenan más instrumentos
+    const hechos = progreso.completados.filter(Boolean).length;
+    voces = c.voces.slice(0, 2 + (hechos >= 1 ? 1 : 0) + (hechos >= 3 ? 1 : 0));
+  }
+  musica = { nombre, c, voces, t: t + 0.08, i: 0, vel: 1 };
 }
+// Con un solo trébol la música se apaga como si se oyera desde lejos
+function peligroMusica(on) { if (actx && filtroMus) filtroMus.frequency.setTargetAtTime(on ? 650 : 20000, actx.currentTime, 0.25); }
 function pararMusica(fundidoS = 0.25) {
   musicaPendiente = null;
   if (!actx || !musica) { musica = null; return; }
@@ -787,7 +835,7 @@ function programarMusica() {
   const paso = musica.c.paso / musica.vel;
   if (musica.t < actx.currentTime - 0.2) musica.t = actx.currentTime + 0.05;
   while (musica.t < actx.currentTime + 0.15) {
-    for (const v of musica.c.voces) {
+    for (const v of musica.voces) {
       const ev = v.pasos[musica.i % v.pasos.length];
       if (ev) instrumento(v.inst, ev.f, musica.t, ev.len * paso, ev.vol * v.vol, salidaMus);
     }
@@ -809,10 +857,22 @@ function iniciarAmbiente(tipo) {
 }
 function pararAmbiente() { if (ambSon) { try { ambSon.s.stop(); ambSon.lfo.stop(); } catch (e) { } ambSon = null; } }
 
-function sfx(n) {
+function sfx(n, extra) {
   if (!actx) return;
   const t = actx.currentTime;
   switch (n) {
+    case 'voz': {   // "habla" de cada personaje en los diálogos
+      const f = extra === 'lua' ? alea(1050, 1350) : extra === 'ale' ? alea(480, 620) : alea(150, 210);
+      osc(extra === 'jefe' ? 'square' : 'triangle', f, f * 0.92, t, 0.06, extra === 'lua' ? 0.035 : 0.045); break; }
+    case 'dialogo': instrumento('campana', FQ('E6'), t, 1, 0.5, salidaFx); break;
+    case 'secreto':   // arpegio propio, a saltos, que sube y se abre
+      ['D6', 'A5', 'E6', 'B5', 'F#6', 'D7'].forEach((x, i) => osc('triangle', FQ(x), 0, t + i * 0.08, 0.3, 0.08));
+      instrumento('campana', FQ('A7'), t + 0.5, 1, 0.9, salidaFx); break;
+    case 'hadas': ['E6', 'B6', 'E7'].forEach((x, i) => instrumento('campana', FQ(x), t + i * 0.12, 1, 0.8, salidaFx)); ruido(t, 0.6, 0.06, 'bandpass', 3000, 7000); break;
+    case 'latido': osc('sine', 62, 40, t, 0.13, 0.4); osc('sine', 56, 38, t + 0.2, 0.12, 0.28); break;
+    case 'liberado':
+      ['D5', 'F#5', 'A5', 'D6', 'F#6', 'A6', 'D7'].forEach((x, i) => instrumento('arpa', FQ(x), t + i * 0.08, 1, 1.2, salidaFx));
+      ['A6', 'D7'].forEach((x, i) => instrumento('campana', FQ(x), t + 0.6 + i * 0.2, 1, 1.2, salidaFx)); break;
     case 'salto': osc('square', 240, 480, t, 0.13, 0.04); osc('triangle', 480, 960, t, 0.13, 0.09); break;
     case 'saltoAlto': osc('triangle', 200, 900, t, 0.35, 0.1); break;
     case 'seta': osc('square', FQ('B5'), 0, t, 0.08, 0.04); osc('square', FQ('E6'), 0, t + 0.07, 0.3, 0.04); osc('sine', FQ('E7'), 0, t + 0.07, 0.35, 0.03); break;
@@ -854,6 +914,15 @@ function sfx(n) {
       ['D7', 'A6', 'F#6'].forEach((x, i) => instrumento('campana', FQ(x), t + 2.7 + i * 0.1, 1, 1, salidaFx));
       break;
     case 'tic': osc('square', FQ('A6'), 0, t, 0.03, 0.02); break;
+    case 'cartel': instrumento('campana', FQ('A6'), t, 1, 0.7, salidaFx); instrumento('campana', FQ('E7'), t + 0.09, 1, 0.5, salidaFx); break;
+    case 'saltoHada': ['E6', 'G#6', 'B6'].forEach((x, i) => osc('sine', FQ(x), 0, t + i * 0.04, 0.25, 0.07)); ruido(t, 0.2, 0.1, 'bandpass', 2000, 5000); break;
+    case 'deseo':
+      ruido(t, 0.5, 0.25, 'lowpass', 1800, 300);   // las setas caen al agua
+      ['E5', 'B5', 'E6', 'G#6', 'B6', 'E7'].forEach((x, i) => instrumento('arpa', FQ(x), t + 0.35 + i * 0.07, 1, 1.2, salidaFx));
+      instrumento('campana', FQ('E7'), t + 0.8, 1, 1.2, salidaFx); break;
+    case 'rescate':
+      ['D5', 'F#5', 'A5', 'D6', 'F#6'].forEach((x, i) => instrumento('arpa', FQ(x), t + i * 0.06, 1, 1.1, salidaFx));
+      instrumento('campana', FQ('A6'), t + 0.32, 1, 1, salidaFx); break;
     case 'emerge': ruido(t, 0.3, 0.25, 'lowpass', 300, 1200); osc('square', 90, 220, t, 0.2, 0.05); break;
     case 'alerta': osc('square', 900, 1300, t, 0.08, 0.03); break;
     case 'cruje': ruido(t, 0.25, 0.2, 'bandpass', 900, 400); break;
@@ -890,7 +959,7 @@ addEventListener('blur', () => {
   if (escena === 'juego' && !pausado && ale.estado === 'normal') { pausado = true; volumenMusica(0.35); }
 });
 let padAntes = [], ejeAntes = { x: 0, y: 0 };
-const NADA = { x: 0, z: 0, salto: false, correr: false, saltoP: false, giroP: false, okP: false, pausaP: false, nuevaP: false, mapaP: false, derP: false, izqP: false, arrP: false, abaP: false };
+const NADA = { x: 0, z: 0, salto: false, correr: false, saltoP: false, giroP: false, okP: false, pausaP: false, nuevaP: false, mapaP: false, bolsaP: false, atrasP: false, vestirP: false, derP: false, izqP: false, arrP: false, abaP: false };
 function leerEntrada() {
   const k = teclas, p = (...cs) => cs.some(c => pulsadas[c]);
   const e = {
@@ -902,7 +971,7 @@ function leerEntrada() {
     giroP: p('KeyJ', 'KeyX'),
     okP: p('Enter', 'NumpadEnter', 'Space'),
     pausaP: p('Escape', 'KeyP', 'Enter', 'NumpadEnter'),
-    nuevaP: p('KeyN'), mapaP: p('KeyM'),
+    nuevaP: p('KeyN'), mapaP: p('KeyM'), bolsaP: p('KeyB', 'KeyI'), atrasP: p('Escape'), vestirP: p('KeyV'),
     derP: p('ArrowRight', 'KeyD'), izqP: p('ArrowLeft', 'KeyA'), arrP: p('ArrowUp', 'KeyW'), abaP: p('ArrowDown', 'KeyS'),
   };
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -919,6 +988,8 @@ function leerEntrada() {
     if (bp(2) || bp(1)) e.giroP = true;
     if (bp(9)) { e.pausaP = true; e.okP = true; }
     if (bp(8)) e.mapaP = true;
+    if (bp(3)) e.bolsaP = true;
+    if (bp(4)) e.vestirP = true;
     if (ax > 0.6 && ejeAntes.x <= 0.6) e.derP = true;
     if (ax < -0.6 && ejeAntes.x >= -0.6) e.izqP = true;
     if (ay < -0.6 && ejeAntes.y >= -0.6) e.arrP = true;
@@ -935,29 +1006,53 @@ function limpiarPulsadas() { for (const k in pulsadas) delete pulsadas[k]; }
 // PROGRESO GUARDADO Y DATOS DE LA PARTIDA
 // =====================================================================
 const CLAVE_GUARDADO = 'aleunda.mundo1.v1';
-const progreso = { completados: [false, false, false, false], trisqueles: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], mundo: false };
+const NUM_NIVELES = 5;             // 1-1 a 1-4 y el claro secreto 1-S
+const progreso = {};
+function progresoVacio() {
+  Object.assign(progreso, {
+    completados: Array(NUM_NIVELES).fill(false), trisqueles: Array.from({ length: NUM_NIVELES }, () => [0, 0, 0]),
+    mundo: false, bolsa: [], preparado: null, deseoUsado: false, nodo: '1-1', historia: [],
+    plata: Array(NUM_NIVELES).fill(0), traje: 'bosque',
+  });
+}
+progresoVacio();
 function cargarProgreso() {
   try {
     const s = JSON.parse(localStorage.getItem(CLAVE_GUARDADO));
     if (s && Array.isArray(s.completados) && Array.isArray(s.trisqueles)) {
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < NUM_NIVELES; i++) {
         progreso.completados[i] = !!s.completados[i];
         for (let j = 0; j < 3; j++) progreso.trisqueles[i][j] = s.trisqueles[i] && s.trisqueles[i][j] ? 1 : 0;
       }
       progreso.mundo = !!s.mundo;
+      const validos = ['trebol4', 'pluma', 'farol'];
+      progreso.bolsa = Array.isArray(s.bolsa) ? s.bolsa.filter(o => validos.includes(o)).slice(0, BOLSA_MAX) : [];
+      progreso.preparado = validos.includes(s.preparado) ? s.preparado : null;
+      progreso.deseoUsado = !!s.deseoUsado;
+      progreso.nodo = typeof s.nodo === 'string' ? s.nodo : '1-1';
+      progreso.historia = Array.isArray(s.historia) ? s.historia.filter(k => typeof k === 'string') : [];
+      for (let i = 0; i < NUM_NIVELES; i++) progreso.plata[i] = Array.isArray(s.plata) && s.plata[i] ? 1 : 0;
+      progreso.traje = TRAJES.some(t => t.id === s.traje) ? s.traje : 'bosque';
     }
   } catch (e) { /* sin guardado: empezamos de cero */ }
 }
 function guardarProgreso() { try { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(progreso)); } catch (e) { /* navegador sin almacenamiento */ } }
-function hayProgreso() { return progreso.completados.some(Boolean) || progreso.trisqueles.some(t => t.some(Boolean)); }
-function borrarProgreso() {
-  progreso.completados = [false, false, false, false];
-  progreso.trisqueles = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
-  progreso.mundo = false; guardarProgreso();
-}
+function hayProgreso() { return progreso.completados.some(Boolean) || progreso.trisqueles.some(t => t.some(Boolean)) || progreso.deseoUsado; }
+function borrarProgreso() { progresoVacio(); guardarProgreso(); }
 function totalTrisqueles() { return progreso.trisqueles.reduce((s, t) => s + t.reduce((a, b) => a + b, 0), 0); }
-const sesion = { vidas: VIDAS_INICIALES, setas: 0, puntos: 0, corazones: CORAZONES_MAX, nivel: 0, control: null };
-function reiniciarSesion() { sesion.vidas = VIDAS_INICIALES; sesion.setas = 0; sesion.puntos = 0; sesion.control = null; }
+function totalPlata() { return progreso.plata.reduce((a, b) => a + b, 0); }
+// Capuchas: se ganan reuniendo bellotas de plata (una escondida en cada nivel) y se cambian con V en el mapa
+const TRAJES = [
+  { id: 'bosque', nombre: 'Capucha del bosque',  bellotas: 0, capa: '#2f6d3b', capaOsc: '#20502b', tunica: '#3f9150' },
+  { id: 'otono',  nombre: 'Capucha de otoño',    bellotas: 2, capa: '#b8572a', capaOsc: '#8a3d1c', tunica: '#d08a2e' },
+  { id: 'noche',  nombre: 'Capucha de la noche', bellotas: 4, capa: '#2c3c86', capaOsc: '#1c2860', tunica: '#4a6ac0' },
+  { id: 'oro',    nombre: 'Capucha dorada',      bellotas: 5, capa: '#d9a520', capaOsc: '#a87a14', tunica: '#e8c860', brilla: true },
+];
+function trajeActual() { return TRAJES.find(t => t.id === progreso.traje) || TRAJES[0]; }
+function trajesGanados() { const n = totalPlata(); return TRAJES.filter(t => n >= t.bellotas); }
+// objeto: lo que AleUnda lleva preparado en este nivel (se gasta al volver al mapa)
+const sesion = { vidas: VIDAS_INICIALES, setas: 0, puntos: 0, corazones: CORAZONES_MAX, corazonesMax: CORAZONES_MAX, nivel: 0, control: null, objeto: null };
+function reiniciarSesion() { sesion.vidas = VIDAS_INICIALES; sesion.setas = 0; sesion.puntos = 0; sesion.control = null; sesion.objeto = null; }
 
 // =====================================================================
 // DECORADO (piezas que se pintan en la malla fija de un nivel o del mapa)
@@ -1060,7 +1155,7 @@ function crearNivel(def, indice) {
   const N = {
     def, indice, t: 0, tiempo: def.tiempo, avisado: false,
     solidos: [], setas: [], pucas: [], fatuos: [], items: [], moviles: [], caes: [], runas: [], muelles: [],
-    controles: [], trisqueles: [], faroles: [], brillosDeco: [], voladoras: [], ondas: [],
+    controles: [], trisqueles: [], faroles: [], brillosDeco: [], voladoras: [], ondas: [], carteles: [], caminos: [], plata: null,
     deco: new Malla(), emis: new Malla(), agua: null, meta: null, jefe: null, arena: null, granTrisquel: null,
     inicio: { x: 0, y: 0, z: 0 }, yMuerte: def.yMuerte ?? -9,
   };
@@ -1074,7 +1169,7 @@ function crearNivel(def, indice) {
 }
 function liberarNivel(N) {
   borrarMalla(N.malla); borrarMalla(N.mallaEmis); borrarMalla(N.mallaAgua);
-  for (const p of N.moviles.concat(N.caes)) borrarMalla(p.malla);
+  for (const p of N.moviles.concat(N.caes, N.caminos)) borrarMalla(p.malla);
 }
 
 // Las funciones del constructor usan "d" = distancia hacia delante (z = -d)
@@ -1107,6 +1202,7 @@ function constructorDe(N) {
     }
     for (const o of N.setas) if (Math.hypot(x - o.x, z - o.z) < R + 1) return false;
     for (const o of N.trisqueles) if (Math.hypot(x - o.x, z - o.z) < R + 1.5) return false;
+    if (N.plata && Math.hypot(x - N.plata.x, z - N.plata.z) < R + 1.5) return false;
     return true;
   }
   function solidosDolmen(x, z, y, esc) {
@@ -1149,12 +1245,25 @@ function constructorDe(N) {
     cilSolido(N, x, z, r, y - 8, y);
     D.cilindro(mat(x, y - 8, z, rnd(0, 6), r, 8, r), C.piedra, 9, 1, C.musgo, 0.12);
   };
-  // Runa: bloque que se golpea desde abajo ('seta', 'setas', 'trebol', 'bellota')
-  L.runa = (x, y, d, item = 'seta') => {
-    const z = Z(d), r = { x, y, z, item, usada: false, golpe: 0, cuenta: 0 };
-    r.s = cajaSolida(N, x - 0.5, x + 0.5, y, y + 1, z - 0.5, z + 0.5, { runa: r });
+  // Runa: bloque que se golpea desde abajo ('seta', 'setas', 'trebol', 'bellota').
+  // Si es oculta no se ve ni se puede pisar hasta que alguien la golpea desde abajo.
+  L.runa = (x, y, d, item = 'seta', oculta = false) => {
+    const z = Z(d), r = { x, y, z, item, usada: false, golpe: 0, cuenta: 0, oculta };
+    r.s = cajaSolida(N, x - 0.5, x + 0.5, y, y + 1, z - 0.5, z + 0.5, { runa: r, oculta });
     N.runas.push(r);
   };
+  // Camino de hadas: losa invisible que aparece al acercarse (y es la base, mide 0.35 de alto)
+  L.caminoHadas = (x, y, d, w = 2, l = 2) => {
+    const z = Z(d);
+    cajaSolida(N, x - w / 2, x + w / 2, y, y + 0.35, z - l / 2, z + l / 2, { hadas: true });
+    const malla = hacer(M => {
+      M.caja(mat(0, 0.175, 0, 0, w, 0.35, l), hx('#8fd8c0'), hx('#c8fff0'), 0.08);
+      for (let k = 0; k < 3; k++) M.caja(mat(-w * 0.3 + k * w * 0.3, 0.36, 0, 0, 0.06, 0.02, l * 0.6), C.runaVerde);
+    });
+    N.caminos.push({ x, y, z, w, l, a: 0, visto: false, malla });
+  };
+  // Bellota de plata: una por nivel, escondida en una zona secreta
+  L.bellotaPlata = (x, y, d) => { N.plata = { x, y, z: Z(d), tomada: false, ya: !!progreso.plata[N.indice] }; };
   // Plataforma que va y viene (ax/ay/ad: amplitud en cada eje)
   L.movil = op => {
     const w = op.w ?? 2.5, l = op.l ?? 2.5, hh = op.h ?? 0.6, z = Z(op.d);
@@ -1274,6 +1383,16 @@ function constructorDe(N) {
     cilSolido(N, x, z, 0.12, y, y + 2.2);
     N.faroles.push({ x: x + lado * 0.45, y: y + 1.85, z });
   };
+  // Cartel de consejo: al acercarse aparece un bocadillo con el texto
+  L.cartel = (x, d, y, txt) => {
+    const z = Z(d);
+    D.cilindro(mat(x, y, z, 0, 0.07, 1.25, 0.07), C.madera, 6, 1);
+    D.caja(mat(x, y + 1.3, z, 0, 1.0, 0.62, 0.08, -0.08), hx('#8a6440'), hx('#9a7450'));
+    E.caja(mat(x, y + 1.3, z + 0.05, 0, 0.06, 0.4, 0.02, -0.08), C.runa);
+    for (let k = 0; k < 3; k++) E.caja(mat(x + (k % 2 ? 0.1 : -0.1), y + 1.18 + k * 0.12, z + 0.05, 0, 0.16, 0.04, 0.02, -0.08), C.runa);
+    cilSolido(N, x, z, 0.15, y, y + 1.6);
+    N.carteles.push({ x, y, z, txt, a: 0, leido: false });
+  };
   // Islita flotante a un lado (con menhir, árbol, setas o dolmen)
   L.isla = (x, d, y, r, adorno) => {
     const z = Z(d);
@@ -1368,16 +1487,21 @@ const NIVELES = [
     construir(L) {
       L.inicio(0, 0);
       L.tierra(-4.5, 4.5, -8, 30);
-      L.farol(-3.6, 1); L.setasDeco(3.6, 3);
+      L.farol(-3.6, 1); L.setasDeco(3.6, 2.5);
+      L.cartel(3.4, 5, 0, 'Flechas o WASD para moverte. Espacio para saltar: si lo mantienes, saltas más alto.');
       L.fila(0, 5, 0, 11, 0.7, 4);
+      L.cartel(-3.4, 12, 0, 'Salta debajo de las runas brillantes y golpéalas con la cabeza. ¡Algo saldrá!');
       L.runa(-1.6, 2.5, 15, 'seta'); L.piedra(0, 2.5, 15, 1, 1, 1); L.runa(1.6, 2.5, 15, 'trebol');
+      L.cartel(3.4, 18, 0, '¡Un púca! Salta encima para vencerlo. Si te toca de lado, pierdes un trébol.');
       L.puca(0, 21, 0, { x0: -3.5, x1: 3.5, d0: 20, d1: 22 });
       L.piedra(-3, 0, 26.5, 2, 1, 2);
       L.menhir(3.6, 25, 0, 2.4);
-      L.arco(0, 28.5, 0, 35.5, 1.0, 2.2, 5);
-      L.tierra(-4.5, 4.5, 34, 63);
+      L.cartel(3.4, 28.5, 0, 'Mantén Shift para correr y saltar más lejos. Si caes, las hadas te rescatan a cambio de un trébol.');
+      L.arco(0, 28.5, 0, 33.5, 1.0, 2.0, 5);
+      L.tierra(-4.5, 4.5, 32, 63);
       L.anillo(0, 40, 0.6, 2.2, 8);
       L.setasDeco(-3.7, 37);
+      L.cartel(-3.4, 43, 0, 'En cada nivel hay 3 trisqueles dorados escondidos. ¡Mira hacia arriba y a los lados!');
       L.puca(-2, 46, 0, { x0: -4, x1: -0.5, d0: 45, d1: 47 });
       L.puca(2, 49, 0, { x0: 0.5, x1: 4, d0: 48, d1: 50 });
       L.piedra(0, 0, 53, 4, 1, 2); L.piedra(0, 0, 55, 4, 2, 2); L.piedra(0, 0, 57, 4, 3, 2);
@@ -1387,12 +1511,15 @@ const NIVELES = [
       L.columna(0, 65.5, 0, 1.0);
       L.tierra(-4.5, 4.5, 68, 106);
       L.control(3.2, 71);
+      L.cartel(-3.4, 69.5, 0, 'Toca los menhires de control: si pierdes una vida, vuelves a empezar desde ahí.');
+      L.cartel(3.4, 76, 0, 'Las setas gigantes te lanzan por los aires. Mantén Espacio al caer encima para subir más.');
       L.muelle(-2.5, 77);
       L.columnaSetas(-2.5, 77, 2.6, 5.4, 3);
       L.losa(-2.5, 5.4, 83, 3, 5);
       L.fila(-2.5, 81.5, -2.5, 84.5, 6.6, 3);
       L.trisquel(-2.5, 8.0, 86.8);
-      L.puca(1, 90, 0, { x0: -1, x1: 3.5, d0: 88, d1: 92 }, 'emboscada');
+      L.cartel(-3.4, 86.5, 0, 'J o X: voltereta. Lanza a los púcas por los aires y, en pleno salto, te da un empujón hacia arriba.');
+      L.puca(1, 90, 0, { x0: -1, x1: 3.5, d0: 88, d1: 92 });
       L.roble(0, 96, 0, 0.8);
       L.anillo(0, 96, 0.6, 2.0, 8);
       L.runa(-1.2, 2.5, 101, 'seta'); L.runa(0, 2.5, 101, 'setas'); L.runa(1.2, 2.5, 101, 'seta');
@@ -1407,10 +1534,16 @@ const NIVELES = [
       L.losa(8.6, 2.2, 131, 2, 2);
       L.trisquel(8.6, 4.2, 131);
       L.runa(6.6, 4.0, 128, 'bellota');
+      L.cartel(-3.9, 134, 0, 'Sube la escalera y salta hacia el menhir: cuanto más alto lo toques, más puntos.');
       L.piedra(0, 0, 137, 6, 1, 1.5); L.piedra(0, 0, 138.5, 6, 2, 1.5); L.piedra(0, 0, 140, 6, 3, 1.5); L.piedra(0, 0, 141.5, 6, 4, 1.5);
       L.meta(0, 146);
       L.dolmen(0, 153, 0, true, 1.2);
       L.farol(-3.6, 149); L.setasDeco(3.5, 151);
+      // secretos: runa escondida sobre las primeras setas y camino de hadas desde lo alto de la escalera
+      L.runa(0, 2.5, 9, 'setas', true);
+      L.cartel(3.6, 51.2, 0, 'Las hadas dejan caminos que solo se ven de cerca. Si ves destellos en el aire, ¡acércate!');
+      L.caminoHadas(-4.6, 2.65, 60.5); L.caminoHadas(-7.2, 2.65, 62); L.caminoHadas(-9.8, 2.65, 63.5);
+      L.isla(-13, 64, 3, 2.2); L.bellotaPlata(-13, 3.9, 64);
       L.isla(-12, 52, -1.5, 3, 'menhir'); L.isla(13, 92, 0.5, 3.5, 'dolmen'); L.isla(-13, 120, -1, 3, 'setas'); L.isla(12, 30, -2, 2.6, 'arbol');
       L.bosque(-12, 170);
     },
@@ -1423,25 +1556,27 @@ const NIVELES = [
       L.inicio(0, 0);
       L.tierra(-4.5, 4.5, -8, 14, 0, { prof: 2.5 });
       L.farol(3.6, 2);
+      L.cartel(-3.4, 8, 0, 'Cruza el arroyo por las piedras. Los fuegos fatuos no se pueden pisar: ¡esquívalos!');
       L.fila(0, 4, 0, 10, 0.7, 4);
-      L.columna(-1.5, 17.5, 0.2, 0.85); L.columna(1.2, 20.5, 0.2, 0.85); L.columna(-1.0, 23.5, 0.2, 0.85); L.columna(1.5, 26.5, 0.2, 0.85);
-      L.seta(-1.5, 1.0, 17.5); L.seta(1.2, 1.0, 20.5); L.seta(-1.0, 1.0, 23.5); L.seta(1.5, 1.0, 26.5);
-      L.columna(-4.3, 21.5, 0.7, 0.7); L.columna(-6.8, 22.8, 1.3, 0.7);
-      L.trisquel(-6.8, 2.8, 22.8);
+      // vado: piedras anchas, casi en línea y con huecos cortos (fácil de cruzar con teclado)
+      for (const [x, d] of [[-0.4, 16.1], [0.4, 19.2], [-0.4, 22.3], [0.4, 25.4], [0, 28.5]]) { L.columna(x, d, 0.1, 1.2); L.seta(x, 0.8, d); }
+      L.columna(-4.4, 21.5, 0.7, 0.85); L.columna(-7, 23, 1.3, 0.85);
+      L.trisquel(-7, 2.8, 23);
       L.tierra(-5, 5, 29.5, 45, 0, { prof: 2.5 });
       L.juncos(-4.8, 30, 0); L.juncos(4.6, 44, 0);
       L.puca(0, 33, 0, { x0: -4, x1: 4, d0: 32, d1: 34 });
       L.runa(0, 2.5, 36.5, 'trebol');
       L.fatuo({ tipo: 'circulo', x: 0, y: 1.0, d: 41, r: 2.6, vel: 1.3 });
       L.anillo(0, 41, 0.6, 1.3, 6);
-      L.movil({ x: 0, y: 0, d: 48.5, w: 3.4, l: 1.6, h: 0.8, ax: 2.6, periodo: 3.4, estilo: 'tronco' });
-      L.movil({ x: 0, y: 0, d: 52.5, w: 3.4, l: 1.6, h: 0.8, ax: 2.6, periodo: 3.4, fase: 0.5, estilo: 'tronco' });
+      L.movil({ x: 0, y: 0, d: 48.5, w: 4, l: 2, h: 0.8, ax: 2.2, periodo: 4.2, estilo: 'tronco' });
+      L.movil({ x: 0, y: 0, d: 52.5, w: 4, l: 2, h: 0.8, ax: 2.2, periodo: 4.2, fase: 0.5, estilo: 'tronco' });
       L.seta(0, 1.2, 48.5); L.seta(0, 1.2, 52.5);
       L.tierra(-4.5, 4.5, 55.5, 73, 0, { prof: 2.5 });
       L.control(-3, 58);
       L.fatuo({ tipo: 'linea', a: [-4.2, 0.9, 63], b: [4.2, 0.9, 63], periodo: 3.2 });
       L.fatuo({ tipo: 'linea', a: [4.2, 0.9, 68], b: [-4.2, 0.9, 68], periodo: 3.2, fase: 0.25 });
       L.fila(0, 61, 0, 70, 0.7, 6);
+      L.cartel(3.4, 71.5, 0, 'Estas maderas se hunden poco después de pisarlas. ¡No te detengas!');
       L.cae({ x: 0, y: 0, d: 76, w: 2.2, l: 2.2 }); L.cae({ x: 1.6, y: 0.4, d: 79.5, w: 2, l: 2 }); L.cae({ x: -0.6, y: 0.8, d: 83, w: 2, l: 2 });
       L.seta(0, 1.0, 76); L.seta(1.6, 1.4, 79.5); L.seta(-0.6, 1.8, 83);
       L.tierra(-5, 5, 86, 101, 0.8, { prof: 2.8 });
@@ -1462,6 +1597,10 @@ const NIVELES = [
       L.piedra(0, 3, 139, 6, 1, 1.5); L.piedra(0, 3, 140.5, 6, 2, 1.5); L.piedra(0, 3, 142, 6, 3, 1.5);
       L.meta(0, 146.5, 3);
       L.juncos(-4.6, 118, 3); L.juncos(4.7, 150, 3); L.juncos(-5.2, 87, 0.8);
+      // secretos: runa escondida sobre el primer púca y camino de hadas sobre el agua
+      L.runa(0, 2.6, 33, 'setas', true);
+      L.caminoHadas(-6.6, -0.35, 66); L.caminoHadas(-9.2, -0.35, 68);
+      L.isla(-12.6, 69.5, 0, 2.2); L.juncos(-13.6, 70.6, 0); L.bellotaPlata(-12.6, 0.9, 69.5);
       L.isla(-11, 64, -0.6, 2.4, 'setas'); L.isla(11, 112, -0.4, 2.8, 'menhir');
       L.nenufares(-20, 170, -1.0, 40);
       L.bosque(-12, 175, { dentro: 10 });
@@ -1473,6 +1612,7 @@ const NIVELES = [
     construir(L) {
       L.inicio(0, 0);
       L.copa(0, 0, 0, 5.5);
+      L.cartel(3.2, -1.5, 0, 'Aquí arriba las hadas ya no te rescatan si caes. Las hojas secas se caen al pisarlas: ¡con calma!');
       L.fila(0, 1.5, 0, 4, 0.7, 3);
       L.rama(0, 5, 13, 0, 0.75);
       L.fila(0, 6.5, 0, 12, 0.7, 4);
@@ -1520,6 +1660,10 @@ const NIVELES = [
       L.fila(0, 108, 4, 108, 13.2, 3);
       L.puca(0, 110, 12.6, { x0: -2, x1: 4, d0: 108.5, d1: 111 });
       L.meta(2, 114.5, 12.6);
+      // secretos: runa escondida en la primera copa y camino de hadas hacia una copa apartada
+      L.runa(1.5, 2.8, 2, 'trebol', true);
+      L.caminoHadas(-5, 6.15, 41.5); L.caminoHadas(-7.8, 6.15, 43.5);
+      L.copa(-11.5, 6.5, 45, 2.2); L.bellotaPlata(-11.5, 7.4, 45);
       L.bosque(-12, 130, { dentro: 11, fuera: 18, y: 6 });
     },
   },
@@ -1563,11 +1707,54 @@ const NIVELES = [
       L.runa(0, 2.5, 84, 'trebol');
       L.runa(-1.5, 2.5, 88, 'setas');
       L.farol(-3.6, 86); L.farol(3.6, 86);
+      L.cartel(3.4, 89.5, 0, 'El Gran Púca hace temblar el suelo: salta sus ondas. Cuando se maree, ¡salta sobre su cabeza!');
       L.arena(0, 101, 0, 11);
       L.anillo(0, 101, 0.6, 6, 10);
       L.jefe(0, 104, 0);
       L.dolmen(0, 114.5, 0, false, 1.6);
+      // secretos: runa escondida antes del jefe y camino de hadas sobre el abismo
+      L.runa(-1.5, 2.5, 82, 'bellota', true);
+      L.caminoHadas(6.6, -0.35, 55); L.caminoHadas(9.2, -0.35, 53);
+      L.isla(12.6, 52, 0, 2.2); L.bellotaPlata(12.6, 0.9, 52);
       L.bosque(-12, 125, { dentro: 9 });
+    },
+  },
+  {
+    // Nivel secreto: se llega por la puerta de piedra del mapa. Es un regalo: muchas setas y rebotes.
+    id: '1-S', nombre: 'El anillo de las hadas', tiempo: 200, ambiente: 'hadas', musica: 'hadas', semilla: 63, amable: true,
+    consejo: 'Un claro secreto lleno de setas: rebota en las setas gigantes y llena el caldero',
+    construir(L) {
+      L.inicio(0, 0);
+      L.tierra(-5, 5, -8, 17);
+      L.cartel(3.6, 3, 0, 'Este claro solo lo encuentra quien busca trisqueles. ¡Las hadas te regalan todo lo que ves!');
+      L.anillo(0, 9, 0.6, 3.2, 14);
+      L.runa(0, 2.6, 9, 'setas');
+      L.setasDeco(-4, 5); L.setasDeco(4, 12); L.setasDeco(-4, 15);
+      L.muelle(0, 15.5);
+      L.columnaSetas(0, 15.5, 3, 7.5, 4);
+      L.trisquel(0, 9.4, 20);
+      L.isla(0, 24, 0, 2.8); L.muelle(0, 24, 0);
+      L.arco(0, 17, 0, 22.5, 2.5, 4.5, 5);
+      L.isla(0, 32, 0, 2.8); L.muelle(0, 32, 0);
+      L.arco(0, 25.5, 0, 30.5, 2.5, 4.5, 5);
+      L.arco(0, 33.5, 0, 38.5, 2.5, 4.5, 5);
+      L.tierra(-5, 5, 37, 75);
+      L.runa(-1.4, 2.5, 41, 'setas'); L.runa(0, 2.5, 41, 'bellota'); L.runa(1.4, 2.5, 41, 'setas');
+      L.puca(0, 46, 0, { x0: -4, x1: 4, d0: 45, d1: 47 });
+      L.anillo(0, 52, 0.6, 2.5, 10);
+      L.movil({ x: 7.5, y: 0, d: 56, w: 2.4, l: 2.4, ax: 2.2, periodo: 3.4, estilo: 'losa' });
+      L.isla(13, 56, 0.4, 2.2, 'setas');
+      L.trisquel(13, 2.2, 56);
+      L.fila(0, 58, 0, 66, 0.7, 5);
+      L.losa(-3, 0.8, 61, 2, 2); L.losa(-3.2, 2.4, 64, 1.8, 1.8); L.losa(-3, 4.0, 67, 1.8, 1.8);
+      L.trisquel(-3, 6.2, 67);
+      L.meta(0, 71);
+      L.farol(3.6, 69);
+      // secretos: runa escondida junto al cartel y camino de hadas hacia la izquierda del claro
+      L.runa(2, 2.5, 4, 'setas', true);
+      L.caminoHadas(-7.4, -0.35, 2); L.caminoHadas(-10, -0.35, 4);
+      L.isla(-13.4, 6, 0, 2.2); L.bellotaPlata(-13.4, 0.9, 6);
+      L.bosque(-12, 85, { dentro: 10 });
     },
   },
 ];
@@ -1611,7 +1798,8 @@ const flotantes = [];
 function flotante(x, y, z, txt, col = '#ffe9a8') { flotantes.push({ x, y, z, txt, col, t: 0 }); }
 let aviso = null;
 function avisar(txt, dur = 2.2) { aviso = { txt, t: 0, dur }; }
-let sacudida = 0, congelado = 0, rayo = 0, tRayo = 4, truenoEn = -1, tBuho = 12;
+let sacudida = 0, congelado = 0, rayo = 0, tRayo = 4, truenoEn = -1, tBuho = 12, destello = 0;
+let tSilencio = 0, peligroActivo = false, tLatido = 0;   // música que reacciona
 
 // =====================================================================
 // COLISIONES
@@ -1643,7 +1831,7 @@ function empujar(s, o, r) {
 // Altura del suelo más alto bajo (x, z) que no esté por encima de y
 function alturaSuelo(x, z, y) {
   let mejor = -Infinity;
-  for (const s of nivel.solidos) if (s.activo && s.y1 <= y + 0.05 && s.y1 > mejor && contiene(s, x, z)) mejor = s.y1;
+  for (const s of nivel.solidos) if (s.activo && !s.oculta && s.y1 <= y + 0.05 && s.y1 > mejor && contiene(s, x, z)) mejor = s.y1;
   if (nivel.agua && nivel.agua.y > mejor && nivel.agua.y <= y) mejor = nivel.agua.y;
   return mejor;
 }
@@ -1657,13 +1845,14 @@ function reiniciarAleUnda(x, y, z) {
     x, y, z, vx: 0, vy: 0, vz: 0, enSuelo: true, suelo: null, coyote: 0, buffer: 0, angulo: Math.PI,
     giro: 0, giroEnfr: 0, giroAire: false, invul: 0.8, estado: 'normal', t: 0, paso: 0, sq: 0, sqV: 0,
     combo: 0, ultimoSuelo: y, mantieneSalto: false, polvoT: 0, tMeta: 0, faseMeta: '', tic: 0, causa: '', tMuerte: 0,
+    seguro: { x, y, z }, saltosExtra: 0,
   });
 }
 function moverAleUnda(dt) {
   const a = ale, r = RADIO_ALEUNDA, sol = nivel.solidos, estaba = a.enSuelo;
   a.x += a.vx * dt; a.z += a.vz * dt;
   for (const s of sol) {
-    if (!s.activo || a.y >= s.y1 - 0.02 || a.y + ALTO_ALEUNDA <= s.y0 || !solapaXZ(s, a.x, a.z, r)) continue;
+    if (!s.activo || s.oculta || a.y >= s.y1 - 0.02 || a.y + ALTO_ALEUNDA <= s.y0 || !solapaXZ(s, a.x, a.z, r)) continue;
     if (estaba && !s.rebote && s.y1 - a.y <= ESCALON) { a.y = s.y1; continue; }
     empujar(s, a, r);
   }
@@ -1673,7 +1862,7 @@ function moverAleUnda(dt) {
   let techo = null, dTecho = 1e9;
   for (const s of sol) {
     if (!s.activo || !solapaXZ(s, a.x, a.z, r * 0.8)) continue;
-    if (a.vy <= 0 && yAntes >= s.y1 - 0.06 && a.y <= s.y1) {
+    if (!s.oculta && a.vy <= 0 && yAntes >= s.y1 - 0.06 && a.y <= s.y1) {
       a.y = s.y1;
       if (s.rebote) rebotarMuelle(s);
       else { a.vy = 0; a.enSuelo = true; a.suelo = s; }
@@ -1691,6 +1880,7 @@ function rebotarMuelle(s) {
   a.enSuelo = false; a.suelo = null; a.giroAire = false; a.sq = -0.35; a.sqV = 0;
   if (s.muelle) { s.muelle.aplasta = 1; estallido(s.muelle.x, s.y1, s.muelle.z, 12, C.setaViol, 3); }
   sfx('muelle');
+  luaDice('¡Wiiiii!', 1.4, 'muelle');
 }
 function actualizarAleUnda(dt, e) {
   const a = ale;
@@ -1701,7 +1891,7 @@ function actualizarAleUnda(dt, e) {
   if (a.estado === 'fin') { a.vx *= 0.9; a.vz *= 0.9; a.vy = Math.max(a.vy - GRAVEDAD * dt, -CAIDA_MAX); moverAleUnda(dt); return; }
   a.invul = Math.max(0, a.invul - dt);
   a.giro = Math.max(0, a.giro - dt); a.giroEnfr = Math.max(0, a.giroEnfr - dt);
-  // las plataformas móviles la llevan encima
+  // las plataformas móviles arrastran a AleUnda
   const s = a.suelo;
   if (s && (s.dx || s.dy || s.dz)) { a.x += s.dx; a.y += s.dy; a.z += s.dz; }
   // movimiento con easing
@@ -1720,6 +1910,10 @@ function actualizarAleUnda(dt, e) {
     a.vy = SALTO_VEL + SALTO_EXTRA_CORRIENDO * clamp((hv - VEL_CAMINAR) / (VEL_CORRER - VEL_CAMINAR), 0, 1);
     a.enSuelo = false; a.suelo = null; a.buffer = 0; a.coyote = 0;
     a.sq = -0.28; a.sqV = 0; sfx('salto'); polvo(a.x, a.y, a.z, 4, 1.5);
+  } else if (e.saltoP && !a.enSuelo && a.coyote <= 0 && a.saltosExtra > 0) {   // doble salto de la pluma de hada
+    a.vy = SALTO_VEL * 0.92; a.saltosExtra--; a.buffer = 0; a.giroAire = false;
+    a.sq = -0.25; a.sqV = 0; sfx('saltoHada');
+    for (let i = 0; i < 12; i++) part(a.x + alea(-0.4, 0.4), a.y + alea(0, 0.4), a.z + alea(-0.4, 0.4), alea(-1, 1), alea(-2, -0.5), alea(-1, 1), alea(0.4, 0.8), 0.3, [0.85, 0.97, 1], { g: 2 });
   }
   // voltereta
   if (e.giroP && a.giroEnfr <= 0) {
@@ -1737,6 +1931,8 @@ function actualizarAleUnda(dt, e) {
   moverAleUnda(dt);
   if (a.enSuelo) {
     a.ultimoSuelo = a.y; a.giroAire = false; a.combo = 0;
+    a.saltosExtra = sesion.objeto === 'pluma' ? 1 : 0;
+    if (sueloSeguro(a.suelo, a.x, a.z)) a.seguro = { x: a.x, y: a.y, z: a.z };
     if (!estaba) {
       const imp = clamp(-vyAntes / 22, 0, 1);
       a.sq = 0.1 + 0.3 * imp; a.sqV = 0;
@@ -1755,7 +1951,29 @@ function actualizarAleUnda(dt, e) {
     const an = alea(0, TAU);
     part(a.x + Math.cos(an) * 0.6, a.y + alea(0.3, 1.3), a.z + Math.sin(an) * 0.6, 0, 0.5, 0, 0.35, 0.3, C.oroClaro);
   }
-  if (a.y < nivel.yMuerte) morir(nivel.agua ? 'agua' : 'caida');
+  if (a.y < nivel.yMuerte) {
+    if ((nivel.indice < RESCATE_EN_CAIDAS || nivel.def.amable) && sesion.corazones > 1) rescatar();
+    else morir(nivel.agua ? 'agua' : 'caida');
+  }
+}
+// Suelo firme y lejos del borde: ahí devuelven las hadas a AleUnda si cae
+function sueloSeguro(s, x, z) {
+  if (!s || s.movil || s.cae || s.rebote || s.runa) return false;
+  const m = 0.7;
+  if (s.tipo === 'caja') return x >= s.x0 + m && x <= s.x1 - m && z >= s.z0 + m && z <= s.z1 - m;
+  return s.r > m && Math.hypot(x - s.x, z - s.z) <= s.r - m;
+}
+function rescatar() {
+  const a = ale, s = a.seguro;
+  sesion.corazones--;
+  if (nivel.agua) { sfx('agua'); estallido(a.x, nivel.agua.y, a.z, 18, [0.6, 0.85, 1], 4, { g: 12, tam: 0.3 }); }
+  a.x = s.x; a.y = s.y + 0.02; a.z = s.z; a.vx = a.vy = a.vz = 0;
+  a.invul = INVULNERABLE_GOLPE; a.enSuelo = false; a.suelo = null; a.coyote = 0; a.buffer = 0; a.giro = 0; a.giroAire = false;
+  sfx('rescate'); destello = 0.7;
+  estallido(a.x, a.y + 1, a.z, 26, C.runaVerde, 3, { arriba: 1 });
+  colocarHada(a.x, a.y, a.z);
+  avisar('¡Lúa te rescató!  (−1 trébol)', 1.8);
+  luaDice(sesion.corazones === 1 ? '¡Te tengo! Pero ya solo te queda un trébol...' : '¡Te tengo! Agárrate fuerte.', 2.6);
 }
 function herir(ox, oz) {
   const a = ale;
@@ -1767,6 +1985,7 @@ function herir(ox, oz) {
   const dx = a.x - ox, dz = a.z - oz, d = Math.hypot(dx, dz) || 1;
   a.vx = dx / d * EMPUJE_GOLPE; a.vz = dz / d * EMPUJE_GOLPE; a.vy = 7; a.enSuelo = false; a.suelo = null;
   estallido(a.x, a.y + 0.8, a.z, 12, [1, 0.5, 0.4], 4);
+  if (sesion.corazones === 1) luaDice('¡Cuidado! Te queda un solo trébol. Golpea runas: quizás haya otro.', 3.2);
 }
 function morir(causa) {
   const a = ale;
@@ -1794,7 +2013,7 @@ function sumarSetas(n, x, y, z) {
   sesion.setas += n; sesion.puntos += n * PUNTOS_SETA;
   while (sesion.setas >= SETAS_POR_VIDA) { sesion.setas -= SETAS_POR_VIDA; vidaExtra(x, y, z); }
 }
-function vidaExtra(x, y, z) { sesion.vidas++; sfx('vida'); flotante(x, y + 1, z, '¡1 VIDA!', '#8dffa8'); }
+function vidaExtra(x, y, z) { sesion.vidas++; sfx('vida'); flotante(x, y + 1, z, '¡1 VIDA!', '#8dffa8'); luaDice('¡Una vida más!', 1.6); }
 
 // --- La meta: cuanto más alto toques el menhir, más puntos ---
 function tocarMeta() {
@@ -1833,9 +2052,8 @@ function actualizarMeta(dt) {
   }
 }
 function completarNivel() {
-  const i = nivel.indice, nuevo = !progreso.completados[i];
-  progreso.completados[i] = true; guardarProgreso();
-  cambiar(() => irAlMapa(nuevo && i < 3 ? i + 1 : -1));
+  progreso.completados[nivel.indice] = true; guardarProgreso();
+  cambiar(() => irAlMapa());
 }
 
 // =====================================================================
@@ -1845,6 +2063,11 @@ function golpeCabeza(s) {
   sfx('tope');
   if (!s.runa) return;
   const r = s.runa; r.golpe = 1;
+  if (r.oculta) {   // ¡runa escondida descubierta!
+    r.oculta = false; s.oculta = false; sfx('secreto');
+    estallido(r.x, r.y + 0.5, r.z, 20, C.runa, 3);
+    luaDice('¡Una runa escondida! ¿Cómo la encontraste?', 2.8, 'oculta');
+  }
   if (r.usada) return;
   if (r.item === 'seta') { setaVoladora(r); r.usada = true; }
   else if (r.item === 'setas') { setaVoladora(r); if (++r.cuenta >= RUNA_MUCHAS_SETAS) r.usada = true; }
@@ -1912,6 +2135,7 @@ function actualizarPlataformas(dt) {
 // =====================================================================
 function actualizarPucas(dt) {
   const vivaAle = ale.estado === 'normal';
+  const tranquilo = nivel.indice < PUCAS_TRANQUILOS, vel = tranquilo ? PUCA_VEL_TRANQUILO : PUCA_VEL;
   for (const p of nivel.pucas) {
     if (!p.vivo) continue;
     if (p.estado === 'aplastado') { p.tA -= dt; if (p.tA <= 0) { p.vivo = false; estallido(p.x, p.y + 0.3, p.z, 10, [0.55, 0.45, 0.8], 2); } continue; }
@@ -1928,15 +2152,15 @@ function actualizarPucas(dt) {
     }
     if (p.estado === 'emerge') {
       p.emerge += dt / 0.45; p.ang = Math.atan2(dx, dz);
-      if (p.emerge >= 1) { p.emerge = 1; p.estado = 'persigue'; p.persigue = PUCA_PERSIGUE; }
+      if (p.emerge >= 1) { p.emerge = 1; p.estado = tranquilo ? 'patrulla' : 'persigue'; p.persigue = PUCA_PERSIGUE; }
       continue;
     }
     p.enfria -= dt;
     let vx = 0, vz = 0;
     if (p.estado === 'patrulla') {
-      if (vivaAle && p.enfria <= 0 && d < PUCA_VISTA && Math.abs(ale.y - p.y) < 2) { p.estado = 'alerta'; p.tA = 0.4; sfx('alerta'); }
-      else if (p.eje === 'x') { vx = PUCA_VEL * p.dir; if ((p.x >= p.b.x1 && p.dir > 0) || (p.x <= p.b.x0 && p.dir < 0)) p.dir *= -1; }
-      else { vz = PUCA_VEL * p.dir; if ((p.z >= p.b.z1 && p.dir > 0) || (p.z <= p.b.z0 && p.dir < 0)) p.dir *= -1; }
+      if (!tranquilo && vivaAle && p.enfria <= 0 && d < PUCA_VISTA && Math.abs(ale.y - p.y) < 2) { p.estado = 'alerta'; p.tA = 0.4; sfx('alerta'); }
+      else if (p.eje === 'x') { vx = vel * p.dir; if ((p.x >= p.b.x1 && p.dir > 0) || (p.x <= p.b.x0 && p.dir < 0)) p.dir *= -1; }
+      else { vz = vel * p.dir; if ((p.z >= p.b.z1 && p.dir > 0) || (p.z <= p.b.z0 && p.dir < 0)) p.dir *= -1; }
     } else if (p.estado === 'alerta') {
       p.tA -= dt; p.ang += angDif(p.ang, Math.atan2(dx, dz)) * (1 - Math.exp(-12 * dt));
       if (p.tA <= 0) { p.estado = 'persigue'; p.persigue = PUCA_PERSIGUE; }
@@ -1961,12 +2185,19 @@ function pisarPuca(p) {
   else { const pts = PUNTOS_PISOTON * Math.pow(2, a.combo - 1); sesion.puntos += pts; flotante(p.x, p.y + 1, p.z, '+' + pts); }
   sfx('pisoton'); congelado = PAUSA_PISOTON;
   estallido(p.x, p.y + 0.5, p.z, 10, [0.65, 0.55, 0.9], 3); polvo(p.x, p.y, p.z, 6, 2);
+  hechizoRoto(p);
+  luaDice('¡Bien! Los púcas solo están hechizados: al pisarlos se rompe el hechizo.', 3.5, 'pisoton');
 }
 function lanzarPuca(p, dx, dz) {
   const d = Math.hypot(dx, dz) || 1;
   p.estado = 'volando'; p.tA = 1.2; p.vx = -dx / d * 9; p.vz = -dz / d * 9; p.vy = 9;
   sesion.puntos += PUNTOS_PISOTON; flotante(p.x, p.y + 1, p.z, '+' + PUNTOS_PISOTON);
   sfx('pisoton'); congelado = PAUSA_PISOTON; estallido(p.x, p.y + 0.5, p.z, 12, C.oroClaro, 4);
+  hechizoRoto(p);
+}
+// Del púca vencido sale una lucecita blanca: era un espíritu del bosque hechizado
+function hechizoRoto(p) {
+  for (let i = 0; i < 5; i++) part(p.x + alea(-0.2, 0.2), p.y + 0.6, p.z + alea(-0.2, 0.2), alea(-0.3, 0.3), alea(1.2, 2), alea(-0.3, 0.3), alea(1, 1.6), 0.45, [0.9, 0.95, 1], { roce: 0.8 });
 }
 function actualizarFatuos(dt) {
   const t = nivel.t;
@@ -2004,7 +2235,10 @@ function actualizarJefe(dt) {
     case 'aparece': {
       const k = clamp(j.t / 1.0, 0, 1);
       j.y = lerp(j.y0 + 20, j.y0, k * k); mirarAle(20);
-      if (k >= 1) { aterrizaJefe(); j.estado = 'ruge'; j.t = 0; sfx('rugido'); tocarMusica('jefe'); }
+      if (k >= 1) {
+        aterrizaJefe(); j.estado = 'ruge'; j.t = 0; sfx('rugido'); tocarMusica('jefe');
+        if (!progreso.historia.includes('jefe')) iniciarDialogo('jefe');
+      }
       break; }
     case 'ruge': mirarAle(); if (j.t > 1.3) { j.estado = 'espera'; j.t = 0; } break;
     case 'espera':
@@ -2040,13 +2274,21 @@ function actualizarJefe(dt) {
     case 'derrotado':
       j.giro += dt * (4 + j.t * 6);
       if (Math.random() < dt * 30) estallido(j.x + alea(-1.5, 1.5), j.y + alea(0.5, 3), j.z + alea(-1.5, 1.5), 4, [0.75, 0.5, 1], 3);
-      if (j.t > 2.2) {
-        j.estado = 'fin'; j.visible = false; sacudida = 0.5; sfx('impacto');
+      if (j.t > 2.2) {   // la corona se rompe y vuelve a ser una liebre blanca y buena
+        j.estado = 'liberado'; j.t = 0; j.giro = 0; j.y = j.y0; sacudida = 0.5; sfx('impacto'); sfx('liberado');
         estallido(j.x, j.y + 1.5, j.z, 60, C.oroClaro, 7);
+        estallido(j.x, j.y + 1, j.z, 30, [0.9, 0.95, 1], 4, { arriba: 2 });
         nivel.granTrisquel = { x: A.x, y: A.y + 1.8, z: A.z, t: 0 };
-        sfx('trisquel'); avisar('¡Toma el Gran Trisquel!', 3);
+        avisar('¡El hechizo se rompió! Toma el Gran Trisquel', 3);
+        luaDice('¡Lo liberaste! ¡Era bueno de verdad!', 3);
       }
       break;
+    case 'liberado': {   // brinca feliz alrededor del centro de la arena
+      const an = j.t * 0.9, tx = A.x + Math.cos(an) * 3.2, tz = A.z + 2.5 + Math.sin(an) * 2.2;
+      j.ang += angDif(j.ang, Math.atan2(tx - j.x, tz - j.z)) * (1 - Math.exp(-8 * dt));
+      j.x = suave(j.x, tx, 2.5, dt); j.z = suave(j.z, tz, 2.5, dt);
+      j.y = j.y0 + Math.abs(Math.sin(j.t * 5)) * 0.55;
+      break; }
   }
   // ondas expansivas: hay que saltarlas
   for (let i = nivel.ondas.length - 1; i >= 0; i--) {
@@ -2056,7 +2298,7 @@ function actualizarJefe(dt) {
     if (ale.y < o.y + 0.55 && Math.abs(da - o.r) < 0.45) herir(o.x, o.z);
   }
   // choque con AleUnda
-  if (j.visible && ale.estado === 'normal' && j.estado !== 'derrotado' && j.estado !== 'aparece') {
+  if (j.visible && ale.estado === 'normal' && j.estado !== 'derrotado' && j.estado !== 'aparece' && j.estado !== 'liberado') {
     const RJ = 1.7, HJ = 3.0;
     if (d < RJ + RADIO_ALEUNDA && ale.y < j.y + HJ && ale.y + ALTO_ALEUNDA > j.y) {
       if (ale.vy < 0 && ale.y > j.y + HJ - 0.9) {
@@ -2098,9 +2340,123 @@ function terminarMundo() {
   progreso.completados[3] = true; progreso.mundo = true; guardarProgreso();
   ale.estado = 'fin'; ale.vx = ale.vz = 0; sesion.puntos += 5000;
   nivel.granTrisquel = null;
-  pararMusica(0.1); sfx('victoria');
+  pararMusica(0.1); sfx('victoria'); peligroMusica(false);
   estallido(ale.x, ale.y + 1.5, ale.z, 70, C.oroClaro, 8);
-  escena = 'final'; tEscena = 0;
+  escena = 'final'; tEscena = 0; finalHablado = false; tPanelFinal = 0;
+}
+let finalHablado = false, tPanelFinal = 0;
+
+// =====================================================================
+// HISTORIA: Lúa, el hada compañera, y las escenas entre niveles
+// =====================================================================
+const NOMBRES = { lua: 'Lúa', ale: 'AleUnda', jefe: 'Gran Púca', liebre: 'Gran Púca' };
+const HISTORIA = {
+  prologo: [
+    ['lua', '¡AleUnda, despierta! Soy Lúa, el hada de los anillos.'],
+    ['lua', 'Esta noche la Banshee apagó la luz del Bosque Sagrado y hechizó a los púcas.'],
+    ['ale', '¿Los anillos de hadas, apagados? ¡Sin su luz el bosque no volverá a despertar!'],
+    ['lua', 'Por eso te necesito. Las setas luminosas y los trisqueles dorados guardan la luz que robó.'],
+    ['lua', 'Empecemos por el claro de los robles. ¡Antes de que amanezca!'],
+  ],
+  tras11: [
+    ['lua', '¡Mira! El camino brilla otra vez. Lo has encendido tú.'],
+    ['lua', 'Aquí el bosque se divide: el arroyo de niebla o las copas de los robles. Los dos llevan al dolmen.'],
+    ['lua', 'Y ese pozo de la izquierda concede deseos... dicen que el primero es gratis.'],
+  ],
+  rutaHecha: [
+    ['lua', 'Siento la luz volviendo a los árboles... ¿lo oyes? El bosque canta un poco más fuerte.'],
+    ['lua', 'El Gran Púca vigila el dolmen. Antes era el guardián más bueno del bosque.'],
+    ['lua', 'Ah, y si reúnes cinco trisqueles, la puerta de piedra del norte se abrirá.'],
+  ],
+  puerta: [
+    ['lua', '¡La puerta de piedra se abrió! Detrás está el claro de mi familia.'],
+    ['lua', 'Ve cuando quieras: mis hermanas tienen regalos para ti.'],
+  ],
+  secreto: [
+    ['lua', 'Mis hermanas te dan las gracias. Desde hoy eres parte de la familia de las hadas.'],
+  ],
+  jefe: [
+    ['jefe', '¡GRRRAAAH! ¡Nadie pasa al dolmen!'],
+    ['lua', 'Es el Gran Púca... la Banshee le puso una corona de espinas.'],
+    ['lua', 'Salta sus ondas y, cuando se maree, ¡salta a su cabeza para romper el hechizo!'],
+  ],
+  final: [
+    ['liebre', '¿Dónde... estoy? Tenía un sueño muy oscuro.'],
+    ['lua', '¡Lo liberaste, AleUnda! Y mira: el primer anillo de hadas vuelve a brillar.'],
+    ['liebre', 'Gracias. La Banshee huyó hacia las Colinas de Niebla. Allí hay más anillos apagados.'],
+    ['ale', 'Entonces iremos por ellos. ¿Vienes, Lúa?'],
+    ['lua', '¡Siempre!'],
+  ],
+};
+// Lo que dice Lúa en la tarjeta de entrada de cada nivel
+const LUA_NIVEL = {
+  '1-1': 'El primer anillo apagado está al final del claro. ¡Vamos!',
+  '1-2': 'La niebla del arroyo es fría... pero las piedras del vado te sostendrán.',
+  '1-3': 'Desde las copas se ve el amanecer. ¡No mires abajo!',
+  '1-4': 'Siento a la Banshee muy cerca. Estoy contigo.',
+  '1-S': 'Este es mi hogar. Mis hermanas te esperan con regalos.',
+};
+let dialogo = null;
+function iniciarDialogo(clave, alTerminar) {
+  const lineas = HISTORIA[clave];
+  if (!lineas) return;
+  dialogo = { lineas, i: 0, t: 0, alTerminar, barras: 0 };
+  if (!progreso.historia.includes(clave)) { progreso.historia.push(clave); guardarProgreso(); }
+  sfx('dialogo');
+}
+function actualizarDialogo(dt, e) {
+  const d = dialogo;
+  d.t += dt; d.barras = Math.min(1, d.barras + dt * 3);
+  const [quien, txt] = d.lineas[d.i], antes = Math.floor((d.t - dt) * LETRAS_POR_SEGUNDO), ahora = Math.floor(d.t * LETRAS_POR_SEGUNDO);
+  if (ahora < txt.length && ahora > antes && ahora % 3 === 0 && txt[ahora] !== ' ') sfx('voz', quien);
+  if (e.okP || e.saltoP) {
+    if (ahora < txt.length) d.t = txt.length / LETRAS_POR_SEGUNDO + 0.01;   // primero se completa la frase
+    else {
+      d.i++; d.t = 0;
+      if (d.i >= d.lineas.length) { const f = d.alTerminar; dialogo = null; if (f) f(); }
+      else sfx('paso');
+    }
+  }
+}
+// La siguiente escena pendiente al volver al mapa (una cada vez)
+function siguienteHistoria() {
+  const visto = k => progreso.historia.includes(k);
+  if (!visto('prologo')) return 'prologo';
+  if (progreso.completados[0] && !visto('tras11')) return 'tras11';
+  if ((progreso.completados[1] || progreso.completados[2]) && !visto('rutaHecha')) return 'rutaHecha';
+  if (superado('puerta') && !visto('puerta')) return 'puerta';
+  if (progreso.completados[4] && !visto('secreto')) return 'secreto';
+  return null;
+}
+
+// --- Lúa vuela junto a AleUnda, deja chispas, ilumina y comenta lo que pasa ---
+const hada = { x: 0, y: 2, z: 0, t: 0, dice: null, chispa: 0 };
+const luaYa = new Set();   // comentarios que Lúa ya hizo en esta sesión
+function colocarHada(x, y, z) { hada.x = x + LUA_DISTANCIA; hada.y = y + LUA_ALTURA; hada.z = z + 0.6; }
+function actualizarHada(dt, x, y, z) {
+  hada.t += dt;
+  hada.x = suave(hada.x, x + LUA_DISTANCIA + Math.sin(hada.t * 1.3) * 0.35, 3.5, dt);
+  hada.y = suave(hada.y, y + LUA_ALTURA + Math.sin(hada.t * 2.1) * 0.18, 3.5, dt);
+  hada.z = suave(hada.z, z + 0.6 + Math.cos(hada.t * 1.1) * 0.25, 3.5, dt);
+  hada.chispa -= dt;
+  if (hada.chispa <= 0) {
+    hada.chispa = 0.06;
+    part(hada.x + alea(-0.1, 0.1), hada.y + alea(-0.1, 0.1), hada.z + alea(-0.1, 0.1), alea(-0.2, 0.2), alea(-0.4, -0.1), alea(-0.2, 0.2), alea(0.5, 0.9), 0.18, [1, 0.9, 0.55]);
+  }
+  if (hada.dice) { hada.dice.t += dt; if (hada.dice.t > hada.dice.dur) hada.dice = null; }
+}
+function luaDice(txt, dur = 3, clave) {
+  if (clave) { if (luaYa.has(clave)) return; luaYa.add(clave); }
+  hada.dice = { txt, t: 0, dur }; sfx('voz', 'lua');
+}
+function dibujarHada() {
+  const m = mat(hada.x, hada.y, hada.z, Math.sin(hada.t * 0.7) * 0.4, 1.2);
+  dibujar(MOD.hada, m, UNO, 0.85);
+  const aleteo = Math.sin(hada.t * 32) * 0.6;
+  dibujar(MOD.alaD, mRZ(mT(new Float32Array(m), 0, 0.02, -0.05), aleteo), UNO, 0.75);
+  dibujar(MOD.alaI, mRZ(mT(new Float32Array(m), 0, 0.02, -0.05), -aleteo), UNO, 0.75);
+  brillo(hada.x, hada.y, hada.z, 1.8, [1, 0.88, 0.6], 0.55);
+  brillo(hada.x, hada.y, hada.z, 0.6, [1, 1, 0.95], 0.9);
 }
 
 // =====================================================================
@@ -2125,12 +2481,16 @@ function interacciones() {
     sfx('trisquel'); estallido(t.x, t.y, t.z, 30, C.oroClaro, 5);
     flotante(t.x, t.y, t.z, '+' + PUNTOS_TRISQUEL);
     avisar('¡Trisquel dorado! ' + nivel.trisqueles.filter(q => q.tomado || q.ya).length + ' / 3');
+    volumenMusica(0.3); tSilencio = 1.6;   // la música se aparta para que se oiga el tesoro
+    luaDice('¡Un trisquel! Cada uno guarda un poquito de la luz del bosque.', 3.2, 'trisquel');
   }
+  const pb = nivel.plata;
+  if (pb && !pb.tomada && Math.hypot(pb.x - cx, pb.y - cy, pb.z - cz) < 1.2) tomarPlata(pb);
   for (const it of nivel.items) {
     if (it.tomado || it.fase === 'sube' || Math.hypot(it.x - cx, it.y - cy, it.z - cz) > 1.0) continue;
     it.tomado = true;
     if (it.tipo === 'trebol') {
-      if (sesion.corazones < CORAZONES_MAX) { sesion.corazones++; flotante(it.x, it.y, it.z, '+1 trébol', '#8dffa8'); }
+      if (sesion.corazones < sesion.corazonesMax) { sesion.corazones++; flotante(it.x, it.y, it.z, '+1 trébol', '#8dffa8'); }
       else { sesion.puntos += 1000; flotante(it.x, it.y, it.z, '+1000'); }
       sfx('trebol'); estallido(it.x, it.y, it.z, 16, C.trebol, 3);
     } else { vidaExtra(it.x, it.y, it.z); estallido(it.x, it.y, it.z, 16, C.oroClaro, 3); }
@@ -2139,6 +2499,7 @@ function interacciones() {
     if (c.activo || Math.hypot(c.x - a.x, c.z - a.z) > 1.8 || Math.abs(a.y - c.y) > 2.5) continue;
     c.activo = true; sesion.control = c.i; sfx('control');
     estallido(c.x, c.y + 1.2, c.z, 22, C.runaVerde, 4); avisar('¡Menhir de control!', 1.6);
+    luaDice('Este menhir recordará tu camino.', 2.4, 'control');
   }
   const m = nivel.meta;
   if (m && !m.tocada && Math.hypot(m.x - a.x, m.z - a.z) < 1.15 && a.y < m.y + m.alto) { tocarMeta(); return; }
@@ -2160,6 +2521,19 @@ function interacciones() {
   }
 }
 
+// Bellota de plata: puntos, recuerdo guardado y, a veces, una capucha nueva
+function tomarPlata(b) {
+  b.tomada = true; sesion.puntos += 2000; flotante(b.x, b.y, b.z, '+2000', '#e8f0ff');
+  const antes = trajesGanados().length;
+  if (!b.ya) { progreso.plata[nivel.indice] = 1; guardarProgreso(); }
+  sfx('secreto'); estallido(b.x, b.y, b.z, 36, [0.9, 0.95, 1], 5);
+  volumenMusica(0.3); tSilencio = 1.8;
+  const ganados = trajesGanados();
+  if (ganados.length > antes) avisar('¡Nueva capucha: ' + ganados[ganados.length - 1].nombre + '!  (V en el mapa)', 3.4);
+  else avisar('¡Bellota de plata! ' + totalPlata() + ' / ' + NUM_NIVELES, 2.6);
+  luaDice('¡Una bellota de plata! Las ardillas del bosque las esconden muy bien.', 3.2);
+}
+
 // =====================================================================
 // PASO DE SIMULACIÓN DEL NIVEL (120 veces por segundo)
 // =====================================================================
@@ -2170,7 +2544,7 @@ function pasoJuego(dt, e) {
   actualizarPlataformas(dt);
   actualizarAleUnda(dt, ale.estado === 'normal' ? e : NADA);
   const j = nivel.jefe;
-  if (j && j.activo && j.estado !== 'fin' && ale.estado === 'normal') limitarArena();
+  if (j && j.activo && j.estado !== 'liberado' && ale.estado === 'normal') limitarArena();
   actualizarPucas(dt); actualizarFatuos(dt); actualizarItems(dt);
   for (const r of nivel.runas) r.golpe = Math.max(0, r.golpe - dt * 5);
   for (const m of nivel.muelles) m.aplasta = Math.max(0, m.aplasta - dt * 2.5);
@@ -2183,8 +2557,11 @@ function pasoJuego(dt, e) {
     if (!nivel.avisado && nivel.tiempo < AVISO_AMANECER) {
       nivel.avisado = true; sfx('aviso'); avisar('¡Amanece pronto!');
       if (musica) musica.vel = 1.25;
+      luaDice('¡El sol ya asoma! ¡Hay que darse prisa!', 2.8);
     }
     if (nivel.tiempo <= 0) { nivel.tiempo = 0; morir('tiempo'); }
+    const m = nivel.meta;
+    if (m && !nivel.metaVista && Math.hypot(m.x - ale.x, m.z - ale.z) < 18) { nivel.metaVista = true; luaDice('¡Ya se ve el menhir de la meta!', 2.4); }
   }
 }
 
@@ -2193,7 +2570,7 @@ function pasoJuego(dt, e) {
 // =====================================================================
 const cam = { x: 0, z: 0, base: 0, dist: CAMARA_DISTANCIA, alt: CAMARA_ALTURA, ojo: [0, 6, 10], obj: [0, 0, 0] };
 function actualizarCamara(dt) {
-  const a = ale, j = nivel.jefe, enJefe = j && j.activo && j.estado !== 'fin';
+  const a = ale, j = nivel.jefe, enJefe = j && j.activo && j.estado !== 'liberado';
   const quieta = a.estado === 'muerto';
   if (!quieta) {
     let objY = cam.base;
@@ -2220,6 +2597,7 @@ const AMBIENTES = {
   niebla:   { arriba: '#08121c', horizonte: '#2a4850', niebla: '#28434c', dens: 0.03,  baja: 0.7,  luz: '#9ec0c8', luzK: 0.7,  dir: [0.4, 0.8, 0.45],   ambArriba: '#385a66', ambAbajo: '#16201e', luna: [-0.4, 0.3, -1] },
   alba:     { arriba: '#1b1a46', horizonte: '#d08070', niebla: '#6a5068', dens: 0.016, baja: 0.35, luz: '#ffc8a8', luzK: 0.95, dir: [0.5, 0.6, 0.35],   ambArriba: '#6a5a8a', ambAbajo: '#2a1e22', luna: [0.6, 0.12, -1] },
   tormenta: { arriba: '#0a0612', horizonte: '#3a2040', niebla: '#2a1830', dens: 0.026, baja: 0.55, luz: '#a890d0', luzK: 0.7,  dir: [-0.3, 0.8, 0.5],   ambArriba: '#3e2e58', ambAbajo: '#1a1018', luna: [0, -1, 0] },
+  hadas:    { arriba: '#06141a', horizonte: '#1f5a50', niebla: '#1b4a42', dens: 0.022, baja: 0.45, luz: '#b8ffe0', luzK: 0.75, dir: [-0.3, 0.8, 0.5],   ambArriba: '#3a6a6a', ambAbajo: '#14201c', luna: [0.2, 0.5, -1] },
   mapa:     { arriba: '#0a1230', horizonte: '#2a4060', niebla: '#22344a', dens: 0.012, baja: 0.2,  luz: '#a8b8e8', luzK: 0.9,  dir: [-0.4, 0.8, 0.4],   ambArriba: '#40507a', ambAbajo: '#1c1814', luna: [-0.5, 0.45, -1] },
 };
 const AMB = {};
@@ -2375,6 +2753,14 @@ function dibujarPuca(p) {
 function dibujarJefe() {
   const j = nivel.jefe;
   if (!j || !j.visible) return;
+  if (j.estado === 'liberado') {   // liebre blanca, sin corona, con los ojos tranquilos
+    const k = Math.min(1, j.t * 3), m = mat(j.x, j.y, j.z, j.ang, 1.15 * k);
+    dibujar(MOD.puca, m, [4.2, 4.2, 4.6], 0.2);
+    dibujar(MOD.pucaOjos, m, [0.55, 0.85, 1], 1);
+    brillo(j.x, j.y + 0.8, j.z, 2.2, [0.85, 0.95, 1], 0.2);
+    sombraSobreSuelo(j.x, j.z, j.y + 0.2, 0.6);
+    return;
+  }
   const esc = 3 * (j.estado === 'derrotado' ? Math.max(0.05, 1 - j.t / 2.2) : 1), sq = j.sq;
   const m = mat(j.x, j.y, j.z, j.ang + j.giro, esc * (1 + sq * 0.4), esc * (1 - sq), esc * (1 + sq * 0.4));
   const fl = j.flash > 0 && Math.floor(j.flash * 12) % 2 === 0 ? [0.8, 0.8, 0.8] : CERO;
@@ -2388,8 +2774,24 @@ function dibujarJefe() {
   sombraSobreSuelo(j.x, j.z, j.y + 0.2, 2.2);
 }
 
+// Destello breve y de vez en cuando que delata algo escondido
+function destelloSecreto(x, z) { const v = reloj * 0.8 + x * 0.37 + z * 0.11; return ((v % 2.2) + 2.2) % 2.2 < 0.15; }
+// La capucha dorada deja chispas alrededor de AleUnda
+function brilloTraje(x, y, z) {
+  if (!trajeActual().brilla) return;
+  for (let k = 0; k < 3; k++) { const a = reloj * 2.5 + k * TAU / 3; brillo(x + Math.cos(a) * 0.55, y + 1.0 + Math.sin(reloj * 3 + k) * 0.45, z + Math.sin(a) * 0.55, 0.35, C.oroClaro, 0.8); }
+}
+// Mezcla dos ambientes (para que al final la tormenta se convierta en amanecer)
+function mezclaAmb(a, b, t) {
+  const r = {};
+  for (const k in a) r[k] = Array.isArray(a[k]) ? mezcla(a[k], b[k], t) : lerp(a[k], b[k], t);
+  r.dir = norm3(r.dir); r.luna = norm3(r.luna);
+  return r;
+}
 function renderNivel() {
-  const amb = AMB[nivel.def.ambiente], N = nivel;
+  const N = nivel;
+  let amb = AMB[N.def.ambiente];
+  if (escena === 'final') amb = mezclaAmb(amb, AMB.alba, clamp(tEscena / 7, 0, 1));
   ambActual = amb;
   if (escena === 'final') {
     const a = tEscena * 0.35;
@@ -2397,8 +2799,8 @@ function renderNivel() {
     ale.angulo = Math.atan2(OJO[0] - ale.x, OJO[2] - ale.z);
   } else prepararCamara(cam.ojo, cam.obj);
   dibujarCielo(amb);
-  // luces cercanas: las 8 más próximas a AleUnda iluminan la escena
-  const L = [[ale.x, ale.y + 1.8, ale.z + 0.8, 0.32, 0.27, 0.18]];
+  // luces cercanas: las 8 más próximas a AleUnda iluminan la escena (Lúa es su farolillo)
+  const L = [[hada.x, hada.y, hada.z, 0.45, 0.4, 0.28]];
   for (const f of N.fatuos) L.push([f.pos[0], f.pos[1], f.pos[2], 0.25, 0.55, 1.0]);
   for (const s of N.setas) if (!s.tomada) L.push([s.x, s.y + 0.3, s.z, 0.45, 0.32, 0.1]);
   for (const t of N.trisqueles) if (!t.tomado) L.push([t.x, t.y, t.z, 0.8, 0.6, 0.2]);
@@ -2407,6 +2809,7 @@ function renderNivel() {
   for (const b of N.brillosDeco) L.push([b.x, b.y, b.z, b.c[0] * 0.4, b.c[1] * 0.4, b.c[2] * 0.4]);
   for (const r of N.runas) if (!r.usada) L.push([r.x, r.y + 0.5, r.z, 0.12, 0.35, 0.45]);
   if (N.meta) L.push([N.meta.x, N.meta.y + N.meta.alto + 0.9, N.meta.z, 1.0, 0.8, 0.35]);
+  if (N.plata && !N.plata.tomada) L.push([N.plata.x, N.plata.y, N.plata.z, 0.6, 0.65, 0.8]);
   if (N.granTrisquel) L.push([N.granTrisquel.x, N.granTrisquel.y, N.granTrisquel.z, 1.4, 1.0, 0.45]);
   if (N.jefe && N.jefe.visible) L.push([N.jefe.x, N.jefe.y + 2.6, N.jefe.z + 1.4, 0.5, 0.25, 0.5]);
   fijarLuces(L, ale.x, ale.y, ale.z);
@@ -2420,12 +2823,23 @@ function renderNivel() {
     dibujar(MOD.seta, mat(s.x, s.y - 0.22 + Math.sin(reloj * 3 + s.fase) * 0.08, s.z, reloj * 1.5 + s.fase, 1.15), UNO, 0.6);
     brillo(s.x, s.y, s.z, 1.5, [1, 0.72, 0.3], 0.35);
   }
-  for (const r of N.runas) if (vis(r.x, r.z)) {
+  for (const r of N.runas) if (r.oculta && vis(r.x, r.z) && destelloSecreto(r.x, r.z)) brillo(r.x, r.y + 0.5, r.z, 0.7, [0.85, 0.95, 1], 0.45);
+  for (const r of N.runas) if (!r.oculta && vis(r.x, r.z)) {
     const m = mat(r.x, r.y + 0.5 + Math.sin(r.golpe * Math.PI) * 0.25, r.z);
     if (r.usada) dibujar(MOD.runa, m, [0.55, 0.52, 0.5]);
     else { dibujar(MOD.runa, m); dibujar(MOD.runaMarcas, m, UNO, 0.6 + 0.4 * Math.sin(reloj * 3)); brillo(r.x, r.y + 0.5, r.z, 2.2, C.runa, 0.12); }
   }
   for (const p of N.moviles) if (vis(p.cx, p.cz)) dibujar(p.malla, mat(p.cx, p.cy, p.cz));
+  for (const c of N.caminos) {   // caminos de hadas: invisibles hasta que AleUnda se acerca; antes solo dejan destellos
+    if (c.a > 0.02) dibujar(c.malla, mat(c.x, c.y, c.z, 0, c.a), UNO, 0.45);
+    else if (destelloSecreto(c.x, c.z)) brillo(c.x + Math.sin(reloj * 3) * 0.4, c.y + 0.45, c.z, 0.9, C.runaVerde, 0.6);
+  }
+  const pb = N.plata;
+  if (pb && !pb.tomada && vis(pb.x, pb.z)) {
+    dibujar(MOD.bellota, mat(pb.x, pb.y + Math.sin(reloj * 2.4) * 0.12, pb.z, reloj * 2, 1.7), pb.ya ? [1.1, 1.2, 1.5] : [1.7, 1.8, 2.0], 0.5);
+    brillo(pb.x, pb.y, pb.z, 2.8, [0.85, 0.92, 1], 0.5);
+    for (let k = 0; k < 3; k++) { const a = reloj * 2 + k * TAU / 3; brillo(pb.x + Math.cos(a) * 0.6, pb.y + Math.sin(reloj * 3 + k) * 0.3, pb.z + Math.sin(a) * 0.6, 0.35, [1, 1, 1], 0.8); }
+  }
   for (const p of N.caes) if (p.s.activo && vis(p.cx, p.cz)) {
     const k = 1 - (p.aparece || 0), tx = p.estado === 'tiembla' ? Math.sin(reloj * 70) * 0.06 : 0;
     dibujar(p.malla, mat(p.cx + tx, p.cy, p.cz, 0, Math.max(0.01, k)));
@@ -2476,61 +2890,118 @@ function renderNivel() {
     brillo(g.x, g.y, g.z, 8, [1, 0.8, 0.3], 0.6);
   }
   const j = N.jefe;
-  if (j && j.activo && j.estado !== 'fin' && N.arena) {   // fuego de hadas que cierra la entrada
+  if (j && j.activo && j.estado !== 'liberado' && N.arena) {   // fuego de hadas que cierra la entrada
     const A = N.arena;
     for (let k = 0; k < 16; k++) {
       const a = 0.95 + k / 15 * 1.25;
       brillo(A.x + Math.cos(a) * A.r, A.y + 0.4 + Math.abs(Math.sin(reloj * 5 + k)) * 1.1, A.z + Math.sin(a) * A.r, 1.6, [0.7, 0.4, 1], 0.6);
     }
   }
-  if (ale.estado !== 'muerto' || ale.causa === 'golpe' || ale.causa === 'tiempo') dibujarAleUnda(ale.x, ale.y, ale.z, ale.angulo, poseAle());
+  if (ale.estado !== 'muerto' || ale.causa === 'golpe' || ale.causa === 'tiempo') { dibujarAleUnda(ale.x, ale.y, ale.z, ale.angulo, poseAle()); brilloTraje(ale.x, ale.y, ale.z); }
   if (ale.estado !== 'muerto') sombraSobreSuelo(ale.x, ale.z, ale.y + 0.1, 0.5);
+  dibujarHada();
   dibujarSombras();
   for (const f of N.faroles) brillo(f.x, f.y, f.z, 2.6, [1, 0.62, 0.25], 0.5 + 0.08 * Math.sin(reloj * 13 + f.x));
+  for (const c of N.carteles) if (!c.leido && vis(c.x, c.z)) brillo(c.x, c.y + 1.95, c.z, 1.1, C.oroClaro, 0.55 + 0.3 * Math.sin(reloj * 5));
   for (const b of N.brillosDeco) brillo(b.x, b.y, b.z, b.tam, b.c, 0.22);
-  dibujarLuciernagas(cam.x, cam.base, cam.z, nivel.def.ambiente === 'alba' ? [1, 0.75, 0.6] : [0.75, 1, 0.45]);
+  if (sesion.objeto === 'farol' && ale.estado === 'normal') {   // estela del farolillo hacia el trisquel más cercano que falta
+    let obj = null, dMin = Infinity;
+    for (const t of N.trisqueles) {
+      if (t.tomado) continue;
+      const d = Math.hypot(t.x - ale.x, t.y - ale.y, t.z - ale.z) + (t.ya ? 1000 : 0);
+      if (d < dMin) { dMin = d; obj = t; }
+    }
+    if (obj) {
+      const ox = ale.x, oy = ale.y + 1.3, oz = ale.z, dx = obj.x - ox, dy = obj.y - oy, dz = obj.z - oz, l = Math.hypot(dx, dy, dz) || 1;
+      const largo = Math.min(l, 7);
+      for (let k = 0; k < 9; k++) {
+        const s = ((k / 9 + reloj * 0.6) % 1) * largo;
+        brillo(ox + dx / l * s, oy + dy / l * s + Math.sin(reloj * 6 + k) * 0.08, oz + dz / l * s, 0.45, [1, 0.85, 0.45], 0.8 * (1 - s / (largo + 0.01)));
+      }
+    }
+  }
+  const lucCol = { alba: [1, 0.75, 0.6], hadas: [0.95, 0.75, 1] }[nivel.def.ambiente] || [0.75, 1, 0.45];
+  dibujarLuciernagas(cam.x, cam.base, cam.z, lucCol);
   dibujarParts();
   dibujarSprites();
 }
 
 // =====================================================================
-// MAPA DEL MUNDO 1 (isla flotante con los cuatro niveles)
+// MAPA DEL MUNDO 1 (isla flotante con caminos que se bifurcan)
 // =====================================================================
-const MAPA = {
-  nodos: [{ x: -9, z: 4.5 }, { x: -3, z: 6.5 }, { x: 2.5, z: 2 }, { x: 8.5, z: -3.5 }],
-  casa: { x: -14, z: 6.5 },
-  malla: null, emis: null, rutas: [],
+// Cada nodo es un nivel, el pozo de los deseos o la puerta de piedra. Para seguir adelante desde
+// un nodo hay que haberlo superado: completar el nivel o reunir los trisqueles que pide la puerta.
+const NODOS = {
+  '1-1':    { tipo: 'nivel', nivel: 0, x: -10.5, z: 4.5 },
+  '1-2':    { tipo: 'nivel', nivel: 1, x: -3, z: 8 },
+  '1-3':    { tipo: 'nivel', nivel: 2, x: -2, z: -3 },
+  '1-4':    { tipo: 'nivel', nivel: 3, x: 8, z: 2 },
+  'pozo':   { tipo: 'pozo', x: -15, z: 0 },
+  'puerta': { tipo: 'puerta', x: -11, z: -8 },
+  '1-S':    { tipo: 'nivel', nivel: 4, x: 1, z: -10 },
 };
-const mapa = { nodo: 0, ruta: null, u: 0, largo: 1, destino: 0, x: -9, z: 4.5, ang: 0, camX: -9, camZ: 4.5, anim: null, paso: 0 };
+// Caminos: [desde, hasta, curva]. Desde el 1-1 se elige ruta: arroyo (1-2) o copas (1-3); cualquiera lleva al dolmen.
+const ARISTAS = [['1-1', '1-2', 1], ['1-1', '1-3', -1], ['1-1', 'pozo', -1], ['pozo', 'puerta', -1], ['puerta', '1-S', 1], ['1-2', '1-4', -1], ['1-3', '1-4', 1]];
+const MAPA = { casa: { x: -15.5, z: 6 }, malla: null, emis: null, aristas: [], puerta: null, pozo: null };
+const mapa = {
+  nodo: '1-1', ruta: null, u: 0, largo: 1, destino: '1-1', x: -10.5, z: 4.5, ang: 0, camX: -10.5, camZ: 4.5, paso: 0,
+  conocidos: new Set(), nuevos: [], tNuevos: 0, panel: null, sel: 0, deseo: null, puertaY: 0,
+};
 function rutaEntre(a, b, k) {
   const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2, dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz);
   const cx = mx - dz / l * 1.6 * k, cz = mz + dx / l * 1.6 * k, pts = [];
   for (let i = 0; i <= 20; i++) { const t = i / 20, u = 1 - t; pts.push([u * u * a.x + 2 * u * t * cx + t * t * b.x, u * u * a.z + 2 * u * t * cz + t * t * b.z]); }
   return pts;
 }
+function superado(id) {
+  const n = NODOS[id];
+  if (n.tipo === 'nivel') return !!progreso.completados[n.nivel];
+  if (n.tipo === 'puerta') return totalTrisqueles() >= TRISQUELES_PUERTA;
+  return true;
+}
+// Nodos a los que ya se puede llegar: se avanza desde el 1-1 pasando solo por nodos superados
+function accesibles() {
+  const vis = new Set(['1-1']), cola = ['1-1'];
+  while (cola.length) {
+    const id = cola.shift();
+    if (!superado(id)) continue;
+    for (const [a, b] of ARISTAS) {
+      const o = a === id ? b : b === id ? a : null;
+      if (o && !vis.has(o)) { vis.add(o); cola.push(o); }
+    }
+  }
+  return vis;
+}
+function puedeIr(desde, hacia, acc) { return acc.has(hacia) && (superado(desde) || superado(hacia)); }
 function construirMapa() {
   azar = semilla(77);
-  const M = new Malla(), E = new Malla(), n = MAPA.nodos, c = MAPA.casa, pts = [c, ...n];
+  MOD.piedraCamino = hacer(M => M.cilindro(mat(0, 0, 0, 0, 0.32, 0.06, 0.26), C.empedrado, 6, 1));
+  const M = new Malla(), E = new Malla(), c = MAPA.casa, ids = Object.keys(NODOS);
   M.cilindro(mat(0, -1.4, 0, 0, 19, 1.4, 13), C.tierra, 32, 1, C.hierba, 0.05);
   M.cilindro(mat(0, -1.35, 0, 0, 18.4, 10, 12.4, Math.PI), C.tierraOsc, 18, 0.1, C.tierraOsc, 0.12);
-  const rutaCasa = rutaEntre(c, n[0], -1);
-  MAPA.rutas = [];
-  for (let i = 1; i < pts.length - 1; i++) MAPA.rutas.push(rutaEntre(pts[i], pts[i + 1], i % 2 ? 1 : -1));
-  const todas = [rutaCasa, ...MAPA.rutas];
-  for (const r of todas) for (let k = 0; k < r.length; k += 2) {
-    const [px, pz] = r[k];
-    if (pts.some(q => Math.hypot(q.x - px, q.z - pz) < 1.25)) continue;
-    M.cilindro(mat(px, 0, pz, rnd(0, 6), 0.32, 0.06, 0.26), jit(C.empedrado, 0.15), 6, 1);
+  MAPA.aristas = ARISTAS.map(([a, b, k]) => ({ a, b, ruta: rutaEntre(NODOS[a], NODOS[b], k), piedras: [], aparece: 1 }));
+  const rutaCasa = rutaEntre(c, NODOS['1-1'], -1), todas = [rutaCasa, ...MAPA.aristas.map(e => e.ruta)];
+  const cercaNodo = (x, z, r) => ids.some(id => Math.hypot(NODOS[id].x - x, NODOS[id].z - z) < r) || Math.hypot(c.x - x, c.z - z) < r;
+  const lejosRutas = (x, z, r) => todas.every(ru => ru.every(([px, pz]) => Math.hypot(px - x, pz - z) > r));
+  // piedras del camino: las de la casa son fijas; las de cada arista aparecen cuando se abre
+  for (let k = 0; k < rutaCasa.length; k += 2) {
+    const [px, pz] = rutaCasa[k];
+    if (!cercaNodo(px, pz, 1.3)) M.cilindro(mat(px, 0, pz, rnd(0, 6), 0.32, 0.06, 0.26), jit(C.empedrado, 0.15), 6, 1);
   }
-  // río con su puente
+  for (const e of MAPA.aristas) for (let k = 0; k < e.ruta.length; k += 2) {
+    const [px, pz] = e.ruta[k];
+    if (!cercaNodo(px, pz, 1.3)) e.piedras.push([px, pz, rnd(0, 6)]);
+  }
+  // río, con un puente allí donde lo cruza un camino
   const rioX = z => -6 + Math.sin(z * 0.35) * 1.3;
   for (let z = -11.6; z < 11.6; z += 0.8) M.caja(mat(rioX(z), 0.015, z, -Math.cos(z * 0.35) * 0.45, 1.6, 0.03, 0.95), hx('#2a6a86'), hx('#2f7896'));
-  let mejor = null;
-  for (const [px, pz] of MAPA.rutas[0]) { const d = Math.abs(px - rioX(pz)); if (!mejor || d < mejor[2]) mejor = [px, pz, d]; }
-  if (mejor) {
-    const r = MAPA.rutas[0], ang = Math.atan2(-(r[r.length - 1][1] - r[0][1]), r[r.length - 1][0] - r[0][0]);
-    M.caja(mat(mejor[0], 0.1, mejor[1], ang, 2.6, 0.1, 1.1), C.madera, hx('#8a6440'));
-    for (const s of [-1, 1]) M.caja(mat(mejor[0] - Math.sin(ang) * s * 0.5, 0.35, mejor[1] - Math.cos(ang) * s * 0.5, ang, 2.6, 0.06, 0.06), C.madera);
+  for (const ru of todas) {
+    let mejor = null;
+    for (let k = 1; k < ru.length - 1; k++) { const d = Math.abs(ru[k][0] - rioX(ru[k][1])); if (!mejor || d < mejor.d) mejor = { k, d }; }
+    if (!mejor || mejor.d > 0.7) continue;
+    const [px, pz] = ru[mejor.k], ang = Math.atan2(-(ru[mejor.k + 1][1] - ru[mejor.k - 1][1]), ru[mejor.k + 1][0] - ru[mejor.k - 1][0]);
+    M.caja(mat(px, 0.1, pz, ang, 2.6, 0.1, 1.1), C.madera, hx('#8a6440'));
+    for (const s of [-1, 1]) M.caja(mat(px + Math.sin(ang) * s * 0.5, 0.35, pz + Math.cos(ang) * s * 0.5, ang, 2.6, 0.06, 0.06), C.madera);
   }
   // casa redonda de AleUnda
   M.cilindro(mat(c.x, 0, c.z, 0, 1.5, 1.3, 1.5), C.pared, 12, 1);
@@ -2538,19 +3009,58 @@ function construirMapa() {
   M.caja(mat(c.x, 0.55, c.z + 1.5, 0, 0.6, 1.1, 0.12), C.madera);
   E.caja(mat(c.x + 0.85, 0.75, c.z + 1.24, 0.6, 0.35, 0.3, 0.06), hx('#ffcf6a'));
   M.cilindro(mat(c.x + 0.5, 2.0, c.z - 0.2, 0, 0.18, 1.1, 0.18), C.piedraOsc, 6, 1);
-  // adornos de cada nivel
-  arbolEn(M, n[0].x - 1.8, n[0].z - 1.7, 0, 2.2, 0.6); setasDecoEn(M, E, n[0].x + 1.6, n[0].z - 1.2, 0, 4);
-  M.cilindro(mat(n[1].x + 1.7, 0.01, n[1].z - 1.5, 0, 1.2, 0.03, 0.8), hx('#2a6a86'), 12, 1, hx('#2f7896'));
-  arbolEn(M, n[2].x + 2.1, n[2].z - 1.6, 0, 3.6, 1.0);
-  dolmenEn(M, E, n[3].x, n[3].z - 2, 0, 1.0);
-  for (let k = 0; k < 7; k++) { const a = Math.PI + k / 6 * Math.PI; menhirEn(M, n[3].x + Math.cos(a) * 3, n[3].z - 2 + Math.sin(a) * 2.4, 0, rnd(1.2, 2)); }
-  // árboles, menhires y setas por la isla, lejos de los caminos
-  // (nada alto justo delante de un nivel, para que la cámara siempre lo vea)
-  const lejos = (x, z, r) => pts.every(q => Math.hypot(q.x - x, q.z - z) > r && !(z > q.z && z - q.z < 7 && Math.abs(x - q.x) < 3.5))
-    && todas.every(ru => ru.every(([px, pz]) => Math.hypot(px - x, pz - z) > r * 0.8));
-  for (let k = 0; k < 60; k++) {
+  // adorno de cada nodo, detrás de él y lejos de los caminos
+  const hueco = (n, r) => {
+    for (const [dx, dz] of [[0, -2.6], [2.6, -1.4], [-2.6, -1.4], [2.8, 1], [-2.8, 1], [0, -3.8], [3.6, -2.6], [-3.6, -2.6]]) {
+      const x = n.x + dx, z = n.z + dz;
+      const despejado = ids.every(id => { const q = NODOS[id]; return Math.hypot(q.x - x, q.z - z) > r + 0.5 && !(z > q.z && z - q.z < 7 && Math.abs(x - q.x) < 3.5); });
+      if (lejosRutas(x, z, r) && despejado) return [x, z];
+    }
+    return [n.x, n.z - 2.6];
+  };
+  let p = hueco(NODOS['1-1'], 1.6); arbolEn(M, p[0], p[1], 0, 2.2, 0.6);
+  p = hueco(NODOS['1-2'], 1.4); M.cilindro(mat(p[0], 0.01, p[1], 0, 1.2, 0.03, 0.8), hx('#2a6a86'), 12, 1, hx('#2f7896'));
+  p = hueco(NODOS['1-3'], 2.0); arbolEn(M, p[0], p[1], 0, 2.8, 0.8);
+  const n4 = NODOS['1-4'], pd = hueco(n4, 2.0);
+  dolmenEn(M, E, pd[0], pd[1], 0, 1.0);
+  MAPA.dolmen = { x: pd[0], z: pd[1] };
+  for (let k = 0; k < 9; k++) {
+    const a = k / 9 * TAU, x = n4.x + Math.cos(a) * 3.2, z = n4.z + Math.sin(a) * 3.2;
+    if (lejosRutas(x, z, 1.0) && Math.hypot(x - pd[0], z - pd[1]) > 2.4) menhirEn(M, x, z, 0, rnd(1.2, 2));
+  }
+  // pozo de los deseos
+  p = hueco(NODOS.pozo, 1.3); MAPA.pozo = { x: p[0], z: p[1] };
+  M.cilindro(mat(p[0], 0, p[1], 0, 0.8, 0.65, 0.8), C.piedra, 12, 1, C.piedraOsc, 0.12);
+  E.cilindro(mat(p[0], 0.56, p[1], 0, 0.62, 0.02, 0.62), C.setaAzul, 12, 1);
+  for (const s of [-1, 1]) M.cilindro(mat(p[0] + s * 0.75, 0, p[1], 0, 0.07, 1.7, 0.07), C.madera, 6, 1);
+  M.cilindro(mat(p[0] - 0.75, 1.35, p[1], 0, 0.04, 1.5, 0.04, 0, -Math.PI / 2), C.madera, 6, 1);
+  M.cilindro(mat(p[0], 1.65, p[1], Math.PI / 4, 1.15, 0.75, 0.85), C.tejado, 4, 0.05, C.tejado, 0.1);
+  M.cilindro(mat(p[0], 0.9, p[1], 0, 0.14, 0.2, 0.14), C.madera, 8, 1.1);
+  // puerta de piedra sobre el camino al claro secreto (la losa que la cierra se dibuja aparte)
+  const ep = MAPA.aristas.find(e => e.a === 'puerta' && e.b === '1-S'), r4 = ep.ruta[4];
+  const angP = Math.atan2(-(ep.ruta[5][1] - ep.ruta[3][1]), ep.ruta[5][0] - ep.ruta[3][0]);
+  MAPA.puerta = { x: r4[0], z: r4[1], ang: angP };
+  for (const s of [-1, 1]) M.caja(mat(r4[0] + Math.sin(angP) * s * 1.05, 1.1, r4[1] + Math.cos(angP) * s * 1.05, angP, 0.55, 2.2, 0.5), C.piedra, C.musgo, 0.1);
+  M.caja(mat(r4[0], 2.42, r4[1], angP, 0.6, 0.45, 2.8), C.piedraOsc, C.musgo, 0.1);
+  E.caja(mat(r4[0] + Math.cos(angP) * 0.31, 2.42, r4[1] - Math.sin(angP) * 0.31, angP, 0.02, 0.08, 1.6), C.setaViol);
+  // claro secreto: anillo de setas que brillan entre menhires
+  const ns = NODOS['1-S'];
+  for (let k = 0; k < 14; k++) {
+    const a = k / 14 * TAU, x = ns.x + Math.cos(a) * 1.75, z = ns.z + Math.sin(a) * 1.75;
+    if (!lejosRutas(x, z, 0.45)) continue;
+    M.cilindro(mat(x, 0, z, 0, 0.06, 0.25, 0.06), C.setaTallo, 5, 0.8);
+    E.esfera(mat(x, 0.24, z, 0, 0.18, 0.11, 0.18), C.runaVerde, 7, 5, { mitad: true });
+  }
+  for (let k = 0; k < 5; k++) {
+    const a = Math.PI + 0.3 + k / 4 * (Math.PI - 0.6), x = ns.x + Math.cos(a) * 2.9, z = ns.z + Math.sin(a) * 2.9;
+    if (lejosRutas(x, z, 0.9)) menhirEn(M, x, z, 0, rnd(1.1, 1.6));
+  }
+  // árboles, menhires y setas por la isla, sin tapar nodos ni caminos
+  const puntos = ids.map(id => NODOS[id]).concat([c, MAPA.pozo, MAPA.puerta, MAPA.dolmen]);
+  const lejos = (x, z, r) => puntos.every(q => Math.hypot(q.x - x, q.z - z) > r && !(z > q.z && z - q.z < 7 && Math.abs(x - q.x) < 3.5)) && lejosRutas(x, z, r * 0.8);
+  for (let k = 0; k < 70; k++) {
     const a = rnd(0, TAU), rr = Math.sqrt(rnd(0.25, 0.85)), x = Math.cos(a) * 17.5 * rr, z = Math.sin(a) * 11.6 * rr;
-    if (!lejos(x, z, 3.2) || Math.abs(x - rioX(z)) < 1.6) continue;
+    if (!lejos(x, z, 3.0) || Math.abs(x - rioX(z)) < 1.6) continue;
     const t = azar();
     if (t < 0.6) arbolEn(M, x, z, 0, rnd(1.3, 2.2), rnd(0.4, 0.65));
     else if (t < 0.75) menhirEn(M, x, z, 0, rnd(1, 1.8));
@@ -2558,82 +3068,199 @@ function construirMapa() {
   }
   for (let k = 0; k < 140; k++) {
     const a = rnd(0, TAU), rr = Math.sqrt(azar()) * 0.95, x = Math.cos(a) * 18 * rr, z = Math.sin(a) * 12 * rr;
-    if (Math.abs(x - rioX(z)) < 1.1) continue;
+    if (Math.abs(x - rioX(z)) < 1.1 || !lejosRutas(x, z, 0.4)) continue;
     if (azar() < 0.6) hierbaEn(M, x, z, 0); else florEn(M, E, x, z, 0);
   }
   MAPA.malla = aGPU(M); MAPA.emis = aGPU(E);
 }
-function maxNodo() { let k = 0; while (k < 3 && progreso.completados[k]) k++; return k; }
-function estadoNodo(i) { return progreso.completados[i] ? 'hecho' : i <= maxNodo() ? 'abierto' : 'cerrado'; }
-function caminar(dest) {
-  const r = dest > mapa.nodo ? MAPA.rutas[mapa.nodo] : MAPA.rutas[dest].slice().reverse();
+// Coloca a AleUnda en su nodo y deja los caminos ya abiertos a la vista
+function reiniciarMapa() {
+  const acc = accesibles();
+  if (!NODOS[mapa.nodo] || !acc.has(mapa.nodo)) mapa.nodo = '1-1';
+  const n = NODOS[mapa.nodo];
+  mapa.x = mapa.camX = n.x; mapa.z = mapa.camZ = n.z; mapa.ruta = null; mapa.panel = null; mapa.nuevos = [];
+  mapa.conocidos = acc; mapa.puertaY = superado('puerta') ? -2.4 : 0;
+  for (const e of MAPA.aristas) e.aparece = acc.has(e.a) && acc.has(e.b) ? 1 : 0;
+}
+// Caminos que salen del nodo actual (abiertos o no), con su dirección en pantalla
+function salidasMapa(acc) {
+  const res = [];
+  for (const e of MAPA.aristas) {
+    let otro, r;
+    if (e.a === mapa.nodo) { otro = e.b; r = e.ruta; } else if (e.b === mapa.nodo) { otro = e.a; r = e.ruta.slice().reverse(); } else continue;
+    const dx = r[3][0] - r[0][0], dz = r[3][1] - r[0][1], l = Math.hypot(dx, dz) || 1;
+    res.push({ otro, r, dx: dx / l, dz: dz / l, abierta: puedeIr(mapa.nodo, otro, acc) });
+  }
+  return res;
+}
+function caminar(s) {
   let largo = 0;
-  for (let i = 1; i < r.length; i++) largo += Math.hypot(r[i][0] - r[i - 1][0], r[i][1] - r[i - 1][1]);
-  mapa.ruta = r; mapa.largo = largo; mapa.u = 0; mapa.destino = dest; sfx('paso');
+  for (let i = 1; i < s.r.length; i++) largo += Math.hypot(s.r[i][0] - s.r[i - 1][0], s.r[i][1] - s.r[i - 1][1]);
+  mapa.ruta = s.r; mapa.largo = largo; mapa.u = 0; mapa.destino = s.otro; sfx('paso');
+}
+function entrarNodo() {
+  const n = NODOS[mapa.nodo];
+  if (n.tipo === 'nivel') {
+    sfx('elegir'); pararMusica(0.3);
+    sesion.objeto = progreso.preparado; progreso.preparado = null; guardarProgreso();
+    const i = n.nivel; cambiar(() => empezarNivel(i, false));
+  } else if (n.tipo === 'pozo') { mapa.panel = 'pozo'; mapa.deseo = null; sfx('elegir'); }
+  else avisar(superado('puerta') ? 'La puerta está abierta: sigue el camino' : 'La puerta se abre con ' + TRISQUELES_PUERTA + ' trisqueles (tienes ' + totalTrisqueles() + ')', 2.2);
+}
+// Pozo de los deseos: el primer deseo es gratis; después cuesta setas
+function pedirDeseo() {
+  if (progreso.bolsa.length >= BOLSA_MAX) { avisar('Tu bolsa está llena (máximo ' + BOLSA_MAX + ')', 1.8); sfx('tope'); return; }
+  const gratis = !progreso.deseoUsado;
+  if (!gratis && sesion.setas < COSTE_DESEO) { avisar('Necesitas ' + COSTE_DESEO + ' setas para pedir un deseo', 1.8); sfx('tope'); return; }
+  if (!gratis) sesion.setas -= COSTE_DESEO;
+  progreso.deseoUsado = true;
+  const tipos = Object.keys(OBJETOS), obj = tipos[Math.floor(Math.random() * tipos.length)];
+  progreso.bolsa.push(obj); guardarProgreso();
+  mapa.deseo = { obj, t: 0 };
+  sfx('deseo');
+  estallido(MAPA.pozo.x, 1.0, MAPA.pozo.z, 30, C.setaAzul, 3.5, { arriba: 3 });
+}
+// Preparar un objeto de la bolsa: se usará en el próximo nivel al que entres
+function prepararObjeto(i) {
+  const obj = progreso.bolsa.splice(i, 1)[0];
+  if (!obj) return;
+  if (progreso.preparado) progreso.bolsa.push(progreso.preparado);
+  progreso.preparado = obj; guardarProgreso();
+  mapa.panel = null; mapa.sel = 0; sfx('elegir');
+  avisar('Preparado: ' + OBJETOS[obj].nombre, 2);
+}
+// Cambia a la siguiente capucha ganada
+function cambiarTraje() {
+  const g = trajesGanados();
+  if (g.length < 2) { avisar('Encuentra bellotas de plata para ganar capuchas nuevas (' + totalPlata() + '/' + NUM_NIVELES + ')', 2.4); sfx('tope'); return; }
+  const i = g.findIndex(t => t.id === progreso.traje);
+  progreso.traje = g[(i + 1) % g.length].id; guardarProgreso(); crearModeloAle();
+  sfx('elegir'); avisar(trajeActual().nombre, 1.6);
+  estallido(mapa.x, 1, mapa.z, 20, hx(trajeActual().capa), 3, { arriba: 1 });
 }
 function actualizarMapa(dt, e) {
-  if (mapa.ruta) {
+  for (const a of MAPA.aristas) if (a.aparece < 1) {   // caminos que se van revelando piedra a piedra
+    const n = a.piedras.length, antes = Math.floor(a.aparece * n);
+    a.aparece = Math.min(1, a.aparece + dt / Math.max(0.6, n * 0.1));
+    if (Math.floor(a.aparece * n) > antes) sfx('paso');
+  }
+  mapa.puertaY = suave(mapa.puertaY, superado('puerta') ? -2.4 : 0, 1.5, dt);
+  if (mapa.deseo) mapa.deseo.t += dt;
+  const atras = e.bolsaP || e.atrasP;
+  if (mapa.panel === 'bolsa') {
+    const n = progreso.bolsa.length;
+    if (e.derP && n) { mapa.sel = (mapa.sel + 1) % n; sfx('paso'); }
+    else if (e.izqP && n) { mapa.sel = (mapa.sel + n - 1) % n; sfx('paso'); }
+    else if (e.okP && n) prepararObjeto(mapa.sel);
+    else if (atras) { mapa.panel = null; sfx('paso'); }
+  } else if (mapa.panel === 'pozo') {
+    if (e.okP) pedirDeseo();
+    else if (atras) { mapa.panel = null; mapa.deseo = null; sfx('paso'); }
+  } else if (mapa.ruta) {
     mapa.u += dt * 4.5 / mapa.largo;
     const r = mapa.ruta, f = Math.min(1, mapa.u) * (r.length - 1), i = Math.min(r.length - 2, Math.floor(f)), t = f - i;
     const nx = lerp(r[i][0], r[i + 1][0], t), nz = lerp(r[i][1], r[i + 1][1], t);
     if (Math.hypot(nx - mapa.x, nz - mapa.z) > 1e-4) mapa.ang += angDif(mapa.ang, Math.atan2(nx - mapa.x, nz - mapa.z)) * (1 - Math.exp(-14 * dt));
     mapa.x = nx; mapa.z = nz; mapa.paso += dt * 13;
-    if (mapa.u >= 1) { mapa.nodo = mapa.destino; mapa.ruta = null; sfx('paso'); }
+    if (mapa.u >= 1) { mapa.nodo = mapa.destino; mapa.ruta = null; sfx('paso'); progreso.nodo = mapa.nodo; guardarProgreso(); }
   } else {
     mapa.ang += angDif(mapa.ang, 0) * (1 - Math.exp(-4 * dt));
-    if (e.derP || e.arrP) {
-      if (mapa.nodo < maxNodo()) caminar(mapa.nodo + 1);
-      else if (mapa.nodo < 3) avisar('Completa el ' + NIVELES[mapa.nodo].id + ' para abrir el camino', 1.8);
-    } else if ((e.izqP || e.abaP) && mapa.nodo > 0) caminar(mapa.nodo - 1);
-    else if (e.okP) { const i = mapa.nodo; sfx('elegir'); pararMusica(0.3); cambiar(() => empezarNivel(i, false)); }
-    else if (pulsadas.Escape) { sfx('paso'); cambiar(() => { escena = 'titulo'; tEscena = 0; }); }
+    const dir = e.derP ? [1, 0] : e.izqP ? [-1, 0] : e.arrP ? [0, -1] : e.abaP ? [0, 1] : null;
+    if (dir) {
+      let mejor = null, md = 0.3;
+      for (const s of salidasMapa(accesibles())) { const d = s.dx * dir[0] + s.dz * dir[1]; if (d > md) { md = d; mejor = s; } }
+      if (mejor && mejor.abierta) caminar(mejor);
+      else if (mejor) {
+        const n = NODOS[mapa.nodo];
+        if (n.tipo === 'puerta') avisar('La puerta se abre con ' + TRISQUELES_PUERTA + ' trisqueles (tienes ' + totalTrisqueles() + ')', 2);
+        else avisar('Completa el ' + mapa.nodo + ' para seguir por aquí', 1.8);
+        sfx('tope');
+      }
+    } else if (e.bolsaP) { mapa.panel = 'bolsa'; mapa.sel = 0; sfx('elegir'); }
+    else if (e.vestirP) cambiarTraje();
+    else if (e.okP) entrarNodo();
+    else if (e.atrasP) { sfx('paso'); cambiar(() => { escena = 'titulo'; tEscena = 0; }); }
   }
   mapa.camX = suave(mapa.camX, mapa.x, 3, dt); mapa.camZ = suave(mapa.camZ, mapa.z, 3, dt);
-  if (mapa.anim) {
-    mapa.anim.t += dt;
-    const n = MAPA.nodos[mapa.anim.nodo];
-    if (Math.random() < dt * 25) estallido(n.x + alea(-0.8, 0.8), 0.4, n.z + alea(-0.8, 0.8), 3, [C.oroClaro, C.runaVerde][Math.floor(Math.random() * 2)], 2.5, { arriba: 2 });
-    if (mapa.anim.t > 2.2) mapa.anim = null;
+  if (mapa.nuevos.length && mapa.tNuevos < 2.6) {
+    mapa.tNuevos += dt;
+    for (const id of mapa.nuevos) {
+      const n = NODOS[id];
+      if (Math.random() < dt * 14) estallido(n.x + alea(-0.8, 0.8), 0.4, n.z + alea(-0.8, 0.8), 3, [C.oroClaro, C.runaVerde][Math.floor(Math.random() * 2)], 2.5, { arriba: 2 });
+    }
   }
   actualizarParts(dt);
 }
 function renderMapa() {
-  const amb = AMB.mapa;
+  // cuantos más niveles completados, más se acerca el amanecer sobre la isla
+  const amb = mezclaAmb(AMB.mapa, AMB.alba, progreso.completados.filter(Boolean).length / NUM_NIVELES * 0.45);
   ambActual = amb;
   let ojo, obj;
   if (escena === 'titulo') { const a = reloj * 0.07; ojo = [Math.sin(a) * 28, 15, Math.cos(a) * 26]; obj = [0, -1.5, 0]; }
   else { ojo = [mapa.camX * 0.75, 13.5, mapa.camZ + 13]; obj = [mapa.camX * 0.75, 0, mapa.camZ - 1.5]; }
   prepararCamara(ojo, obj);
   dibujarCielo(amb);
-  const c = MAPA.casa, L = [[mapa.x, 1.8, mapa.z + 0.8, 0.35, 0.3, 0.2], [c.x + 0.9, 0.9, c.z + 1.5, 0.9, 0.6, 0.25]];
-  for (let i = 0; i < 4; i++) {
-    const n = MAPA.nodos[i], st = estadoNodo(i);
-    if (st === 'hecho') L.push([n.x, 1, n.z, 0.9, 0.7, 0.3]); else if (st === 'abierto') L.push([n.x, 1, n.z, 0.4, 0.6, 0.8]);
+  const acc = accesibles(), c = MAPA.casa, pz = MAPA.pozo, D = MAPA.dolmen;
+  const L = [[mapa.x, 1.8, mapa.z + 0.8, 0.35, 0.3, 0.2], [c.x + 0.9, 0.9, c.z + 1.5, 0.9, 0.6, 0.25], [pz.x, 0.9, pz.z, 0.2, 0.6, 0.7], [D.x, 2, D.z, 0.6, 0.3, 0.8]];
+  for (const id in NODOS) {
+    const n = NODOS[id];
+    if (n.tipo !== 'nivel' || !acc.has(id)) continue;
+    L.push(superado(id) ? [n.x, 1, n.z, 0.9, 0.7, 0.3] : [n.x, 1, n.z, 0.4, 0.6, 0.8]);
   }
-  L.push([MAPA.nodos[3].x, 2, MAPA.nodos[3].z - 1.8, 0.6, 0.3, 0.8]);
+  if (acc.has('1-S')) { const s = NODOS['1-S']; L.push([s.x, 1.2, s.z, 0.3, 0.9, 0.5]); }
   fijarLuces(L, obj[0], 0, obj[2]);
   prepararPrincipal(amb);
   dibujar(MAPA.malla, IDENT);
   dibujar(MAPA.emis, IDENT, UNO, 0.9);
-  for (let i = 0; i < 4; i++) {
-    const n = MAPA.nodos[i], st = estadoNodo(i), pulso = 0.5 + 0.5 * Math.sin(reloj * 4);
-    const tinte = st === 'hecho' ? [1.5, 1.2, 0.5] : st === 'abierto' ? [0.8 + 0.3 * pulso, 0.95 + 0.25 * pulso, 1.2] : [0.38, 0.4, 0.46];
-    dibujar(MOD.nodo, mat(n.x, 0, n.z), tinte, st === 'hecho' ? 0.3 : st === 'abierto' ? 0.15 * pulso : 0);
-    if (st === 'hecho') brillo(n.x, 0.6, n.z, 2.6, [1, 0.8, 0.3], 0.35);
-    else if (st === 'abierto') brillo(n.x, 0.6, n.z, 2.6, [0.6, 0.85, 1], 0.2 + 0.25 * pulso);
+  for (const e of MAPA.aristas) {
+    if (!(acc.has(e.a) && acc.has(e.b))) continue;
+    const vis = e.aparece * e.piedras.length;
+    for (let k = 0; k < e.piedras.length && k < vis; k++) {
+      const [x, z, r] = e.piedras[k], s = Math.min(1, vis - k);
+      dibujar(MOD.piedraCamino, mat(x, 0, z, r, s));
+    }
+  }
+  const pulso = 0.5 + 0.5 * Math.sin(reloj * 4);
+  for (const id in NODOS) {
+    const n = NODOS[id], abierto = acc.has(id), hecho = superado(id);
+    let tinte = [0.38, 0.4, 0.46], emis = 0;
+    if (n.tipo === 'nivel') {
+      if (abierto && hecho) { tinte = [1.5, 1.2, 0.5]; emis = 0.3; }
+      else if (abierto) { tinte = [0.8 + 0.3 * pulso, 0.95 + 0.25 * pulso, 1.2]; emis = 0.15 * pulso; }
+    } else if (n.tipo === 'pozo' && abierto) { tinte = [0.6, 1.1, 1.2]; emis = 0.15; }
+    else if (n.tipo === 'puerta' && abierto) tinte = hecho ? [0.95, 0.8, 1.3] : [0.6, 0.55, 0.7];
+    dibujar(MOD.nodo, mat(n.x, 0, n.z), tinte, emis);
+    if (n.tipo === 'nivel' && abierto) brillo(n.x, 0.6, n.z, 2.6, hecho ? [1, 0.8, 0.3] : [0.6, 0.85, 1], hecho ? 0.35 : 0.2 + 0.25 * pulso);
+  }
+  const P = MAPA.puerta;
+  if (mapa.puertaY > -2.35) {
+    const m = mat(P.x, 1.0 + mapa.puertaY, P.z, P.ang, 0.3, 2.0, 1.6);
+    dibujar(MOD.runa, m, [0.7, 0.65, 0.8]);
+    dibujar(MOD.runaMarcas, m, [0.75, 0.45, 1], 0.6 + 0.4 * Math.sin(reloj * 3));
   }
   let dMin = 9;
-  for (const n of MAPA.nodos) dMin = Math.min(dMin, Math.hypot(n.x - mapa.x, n.z - mapa.z));
+  for (const id in NODOS) dMin = Math.min(dMin, Math.hypot(NODOS[id].x - mapa.x, NODOS[id].z - mapa.z));
   const y = 0.06 + 0.19 * clamp(1.6 - dMin * 1.6, 0, 1);
   dibujarAleUnda(mapa.x, y, mapa.z, mapa.ang, { paso: mapa.paso, vel: mapa.ruta ? 0.65 : 0, aire: false, sq: 0 });
+  brilloTraje(mapa.x, y, mapa.z);
   sombraEn(mapa.x, y + 0.02, mapa.z, 0.5, 0.4);
+  dibujarHada();
   dibujarSombras();
+  for (const id in NODOS) {   // los anillos de hadas de los niveles completados vuelven a brillar
+    const n = NODOS[id];
+    if (n.tipo !== 'nivel' || !superado(id)) continue;
+    for (let k = 0; k < 10; k++) { const a = k / 10 * TAU + reloj * 0.3; brillo(n.x + Math.cos(a) * 1.45, 0.25 + Math.sin(reloj * 3 + k) * 0.05, n.z + Math.sin(a) * 1.45, 0.5, [1, 0.85, 0.45], 0.7); }
+  }
   for (let k = 0; k < 7; k++) {   // humo de la chimenea
     const t = (reloj * 0.35 + k / 7) % 1;
     humo(c.x + 0.5 + t * 0.9, 3.1 + t * 3, c.z - 0.2 - t * 0.3, 0.5 + t * 1.4, [0.62, 0.62, 0.68], 0.35 * (1 - t));
   }
   brillo(c.x + 0.9, 0.8, c.z + 1.35, 1.6, [1, 0.75, 0.35], 0.45);
-  brillo(MAPA.nodos[3].x, 2.4, MAPA.nodos[3].z - 2, 4, C.setaViol, 0.25 + 0.1 * Math.sin(reloj * 2));
+  brillo(pz.x, 0.75, pz.z, 2.2, C.setaAzul, 0.3 + 0.12 * Math.sin(reloj * 3));
+  brillo(D.x, 2.4, D.z, 4, C.setaViol, 0.25 + 0.1 * Math.sin(reloj * 2));
+  const s = NODOS['1-S'];
+  brillo(s.x, 0.5, s.z, 4.5, C.runaVerde, acc.has('1-S') ? 0.4 + 0.15 * pulso : 0.12);
+  if (!superado('puerta')) brillo(P.x, 1.2, P.z, 2.4, C.setaViol, 0.25 + 0.1 * Math.sin(reloj * 3));
   dibujarLuciernagas(obj[0], 0, obj[2], [0.75, 1, 0.45]);
   dibujarParts();
   dibujarSprites();
@@ -2681,6 +3308,13 @@ function trebol2D(cx, cy, r, col) {
   for (let k = 0; k < 3; k++) { const a = -Math.PI / 2 + k * TAU / 3; h.beginPath(); h.arc(cx + Math.cos(a) * r * 0.55, cy + Math.sin(a) * r * 0.55, r * 0.5, 0, TAU); h.fill(); }
   h.lineWidth = r * 0.2; h.beginPath(); h.moveTo(cx, cy); h.quadraticCurveTo(cx + r * 0.3, cy + r * 0.7, cx + r * 0.15, cy + r * 1.15); h.stroke();
 }
+function bellota2D(cx, cy, r, col) {
+  h.fillStyle = col;
+  h.beginPath(); h.ellipse(cx, cy + r * 0.25, r * 0.68, r * 0.82, 0, 0, TAU); h.fill();
+  h.beginPath(); h.ellipse(cx, cy - r * 0.3, r * 0.82, r * 0.42, 0, Math.PI, TAU); h.fill();
+  h.fillStyle = 'rgba(0,0,0,0.3)'; h.beginPath(); h.ellipse(cx, cy - r * 0.3, r * 0.82, r * 0.42, 0, Math.PI, TAU); h.fill();
+  h.strokeStyle = col; h.lineWidth = r * 0.18; h.beginPath(); h.moveTo(cx, cy - r * 0.7); h.lineTo(cx + r * 0.15, cy - r * 1.05); h.stroke();
+}
 function seta2D(cx, cy, r) {
   const g = h.createRadialGradient(cx, cy, 0, cx, cy, r * 1.8); g.addColorStop(0, 'rgba(255,200,90,0.45)'); g.addColorStop(1, 'rgba(255,200,90,0)');
   h.fillStyle = g; h.fillRect(cx - r * 2, cy - r * 2, r * 4, r * 4);
@@ -2699,7 +3333,7 @@ function retrato(cx, cy, r) {
   h.fillStyle = '#c9472b';
   for (const s of [-1, 1]) for (let k = 0; k < 4; k++) { h.beginPath(); h.arc(cx + s * r * 0.85, cy + r * (0.1 + k * 0.38), r * (0.3 - k * 0.03), 0, TAU); h.fill(); }
   h.fillStyle = '#f4c9a3'; h.beginPath(); h.arc(cx, cy + r * 0.15, r * 0.82, 0, TAU); h.fill();
-  h.fillStyle = '#2f6d3b'; h.beginPath();
+  h.fillStyle = trajeActual().capa; h.beginPath();
   h.moveTo(cx - r, cy - r * 0.05);
   h.quadraticCurveTo(cx - r * 0.6, cy - r * 1.3, cx + r * 0.2, cy - r * 2.0);
   h.quadraticCurveTo(cx + r * 0.6, cy - r * 1.0, cx + r, cy - r * 0.05);
@@ -2720,13 +3354,91 @@ function dibujarAviso() {
   if (!aviso) return;
   texto(aviso.txt, VW / 2, VH * 0.27, 34, '#ffe9a8', 'center', 'bold', clamp(Math.min(aviso.t * 4, (aviso.dur - aviso.t) * 2.5), 0, 1));
 }
+function partirTexto(txt, anchoMax) {
+  const lineas = []; let linea = '';
+  for (const p of txt.split(' ')) {
+    const prueba = linea ? linea + ' ' + p : p;
+    if (h.measureText(prueba).width > anchoMax && linea) { lineas.push(linea); linea = p; } else linea = prueba;
+  }
+  if (linea) lineas.push(linea);
+  return lineas;
+}
+// Bocadillo de pergamino que sale de los carteles
+function burbuja(x, y, txt, a, deHada) {
+  h.globalAlpha = a;
+  h.font = `bold 16px ${FUENTE}`;
+  const lineas = partirTexto(txt, 300);
+  const w = Math.max(...lineas.map(l => h.measureText(l).width)) + 30, hh = lineas.length * 22 + 20;
+  const bx = clamp(x - w / 2, 10, VW - w - 10), by = y - hh - 16 + (1 - a) * 10;
+  const fondo = deHada ? 'rgba(222,246,255,0.96)' : 'rgba(246,236,210,0.96)';
+  rectRedondo(bx, by, w, hh, 10);
+  h.fillStyle = fondo; h.fill();
+  h.lineWidth = 2; h.strokeStyle = deHada ? '#5ab0d8' : '#b8862a'; h.stroke();
+  h.beginPath(); h.moveTo(x - 9, by + hh - 1); h.lineTo(x, by + hh + 13); h.lineTo(x + 9, by + hh - 1); h.closePath();
+  h.fillStyle = fondo; h.fill();
+  h.fillStyle = deHada ? '#163848' : '#3a2a16'; h.textAlign = 'center'; h.textBaseline = 'middle';
+  lineas.forEach((l, i) => h.fillText(l, bx + w / 2, by + 21 + i * 22));
+  h.globalAlpha = 1;
+}
+// Retratos para los diálogos
+function retratoLua(cx, cy, r) {
+  const g = h.createRadialGradient(cx, cy, 0, cx, cy, r * 1.9);
+  g.addColorStop(0, 'rgba(255,236,170,0.75)'); g.addColorStop(1, 'rgba(255,236,170,0)');
+  h.fillStyle = g; h.fillRect(cx - r * 2, cy - r * 2, r * 4, r * 4);
+  h.fillStyle = 'rgba(200,240,255,0.75)';
+  for (const s of [-1, 1]) { h.beginPath(); h.ellipse(cx + s * r * 0.95, cy - r * 0.2, r * 0.75, r * 0.38, s * -0.5, 0, TAU); h.fill(); }
+  h.fillStyle = '#ffd977'; h.beginPath(); h.arc(cx, cy - r * 0.18, r * 0.72, Math.PI, 0); h.fill();
+  h.beginPath(); h.arc(cx + r * 0.45, cy - r * 0.75, r * 0.24, 0, TAU); h.fill();
+  h.fillStyle = '#fff3e0'; h.beginPath(); h.arc(cx, cy + r * 0.08, r * 0.6, 0, TAU); h.fill();
+  h.fillStyle = '#ffd977'; h.beginPath(); h.ellipse(cx - r * 0.1, cy - r * 0.42, r * 0.52, r * 0.2, -0.2, 0, TAU); h.fill();
+  h.fillStyle = '#2a3a5a'; for (const s of [-1, 1]) { h.beginPath(); h.arc(cx + s * r * 0.22, cy + r * 0.08, r * 0.08, 0, TAU); h.fill(); }
+  h.fillStyle = 'rgba(240,140,150,0.7)'; for (const s of [-1, 1]) { h.beginPath(); h.arc(cx + s * r * 0.38, cy + r * 0.28, r * 0.09, 0, TAU); h.fill(); }
+  h.strokeStyle = '#a05a50'; h.lineWidth = r * 0.06; h.beginPath(); h.arc(cx, cy + r * 0.26, r * 0.13, 0.2, Math.PI - 0.2); h.stroke();
+}
+function retratoPuca(cx, cy, r, libre) {
+  const piel = libre ? '#f2eef8' : '#2a2238';
+  h.fillStyle = piel;
+  for (const s of [-1, 1]) { h.beginPath(); h.ellipse(cx + s * r * 0.35, cy - r * 0.95, r * 0.18, r * 0.62, s * 0.25, 0, TAU); h.fill(); }
+  h.beginPath(); h.ellipse(cx, cy + r * 0.1, r * 0.78, r * 0.7, 0, 0, TAU); h.fill();
+  if (!libre) { h.fillStyle = '#8a2a3e'; for (let k = 0; k < 5; k++) { const x = cx - r * 0.5 + k * r * 0.25; h.beginPath(); h.moveTo(x - r * 0.08, cy - r * 0.45); h.lineTo(x, cy - r * 0.78); h.lineTo(x + r * 0.08, cy - r * 0.45); h.fill(); } }
+  h.fillStyle = libre ? '#7ac8ff' : '#ffcf3a';
+  for (const s of [-1, 1]) { h.beginPath(); h.ellipse(cx + s * r * 0.3, cy + r * 0.02, r * 0.12, r * 0.15, 0, 0, TAU); h.fill(); }
+  h.fillStyle = '#c46a8a'; h.beginPath(); h.arc(cx, cy + r * 0.32, r * 0.09, 0, TAU); h.fill();
+}
+// Caja de diálogo con franjas de cine, retrato y texto que aparece letra a letra
+function hudDialogo() {
+  const d = dialogo;
+  if (!d) return;
+  const barra = VH * 0.1 * d.barras;
+  h.fillStyle = '#000'; h.fillRect(0, 0, VW, barra); h.fillRect(0, VH - barra, VW, barra);
+  const [quien, txt] = d.lineas[d.i], n = Math.min(txt.length, Math.floor(d.t * LETRAS_POR_SEGUNDO));
+  const w = Math.min(820, VW - 40), x = VW / 2 - w / 2, y = VH - barra - 168;
+  panel(x, y, w, 150, 0.9);
+  const px = x + 72, py = y + 78;
+  if (quien === 'lua') retratoLua(px, py, 32);
+  else if (quien === 'ale') retrato(px, py + 10, 26);
+  else retratoPuca(px, py + 8, 34, quien === 'liebre');
+  texto(NOMBRES[quien], x + 140, y + 32, 19, quien === 'lua' ? '#9fe8ff' : quien === 'ale' ? '#8dffa8' : quien === 'jefe' ? '#e0a0ff' : '#f0eef8', 'left');
+  h.font = `normal 19px ${FUENTE}`;
+  const lineas = partirTexto(txt, w - 180);
+  let quedan = n;
+  lineas.forEach((l, i) => { if (quedan <= 0) return; texto(l.slice(0, quedan), x + 140, y + 68 + i * 27, 19, '#f0f4ff', 'left', 'normal'); quedan -= l.length + 1; });
+  if (n >= txt.length && Math.floor(reloj * 2.5) % 2 === 0) flecha2D(x + w - 32, y + 124, Math.PI / 2, 9);
+}
 function hudJuego() {
   const m = 18, cx = VW / 2;
   panel(m, m, 262, 76);
   retrato(m + 40, m + 44, 17);
   texto('ALEUNDA', m + 74, m + 25, 15, '#ffe9a8', 'left');
   texto('× ' + sesion.vidas, m + 74, m + 53, 24, '#ffffff', 'left');
-  for (let i = 0; i < CORAZONES_MAX; i++) trebol2D(m + 166 + i * 31, m + 50, 11, i < sesion.corazones ? '#5fe07a' : 'rgba(255,255,255,0.16)');
+  const ultimoTrebol = sesion.corazones === 1 && Math.floor(reloj * 3) % 2 === 0;   // el último trébol parpadea
+  const sepT = sesion.corazonesMax > 3 ? 24 : 31;
+  for (let i = 0; i < sesion.corazonesMax; i++) trebol2D(m + 166 + i * sepT, m + 50, 11, i < sesion.corazones ? (ultimoTrebol ? '#ff9a6a' : '#5fe07a') : 'rgba(255,255,255,0.16)');
+  if (sesion.objeto) {   // objeto de la bolsa que se está usando en este nivel
+    h.beginPath(); h.arc(m + 296, m + 38, 26, 0, TAU); h.fillStyle = 'rgba(8,14,22,0.6)'; h.fill();
+    h.lineWidth = 2; h.strokeStyle = 'rgba(232,179,58,0.8)'; h.stroke();
+    iconoObjeto(sesion.objeto, m + 296, m + 38, 15);
+  }
   panel(cx - 115, m, 230, 76);
   seta2D(cx - 66, m + 31, 15);
   texto('× ' + String(sesion.setas).padStart(2, '0'), cx - 42, m + 30, 25, '#ffffff', 'left');
@@ -2740,9 +3452,15 @@ function hudJuego() {
     const t = nivel.trisqueles[i], got = t && (t.tomado || t.ya);
     trisquel2D(VW - m - 222 + i * 36, m + 54, 12, got ? '#ffd977' : 'rgba(255,255,255,0.18)', got ? reloj * 0.8 : 0);
   }
+  if (nivel.plata) { const pb = nivel.plata; bellota2D(VW - m - 110, m + 54, 10, pb.tomada || pb.ya ? '#e8f0ff' : 'rgba(255,255,255,0.18)'); }
   for (const p of nivel.pucas) if (p.vivo && p.estado === 'alerta') { const q = proyectar(p.x, p.y + 1.9, p.z); if (q) texto('!', q[0], q[1], 30, '#ffd977'); }
+  for (const c of nivel.carteles) if (c.a > 0.02) { const q = proyectar(c.x, c.y + 1.9, c.z); if (q) burbuja(q[0], q[1], c.txt, c.a); }
+  if (hada.dice && !dialogo) {   // lo que comenta Lúa
+    const q = proyectar(hada.x, hada.y + 0.35, hada.z), d = hada.dice;
+    if (q) burbuja(q[0], q[1], d.txt, clamp(Math.min(d.t * 5, (d.dur - d.t) * 3), 0, 1), true);
+  }
   const j = nivel.jefe;
-  if (j && j.activo && j.estado !== 'fin') {
+  if (j && j.activo && j.estado !== 'liberado') {
     panel(cx - 170, VH - 82, 340, 60);
     texto('EL GRAN PÚCA', cx, VH - 64, 16, '#e0b0ff');
     for (let i = 0; i < JEFE_VIDA; i++) { h.fillStyle = i < j.vida ? '#b07cff' : 'rgba(255,255,255,0.14)'; rectRedondo(cx - 110 + i * 76, VH - 46, 68, 12, 5); h.fill(); }
@@ -2766,6 +3484,11 @@ function hudIntro() {
   texto(def.nombre, cx, cy - 10, 30, '#cfe8d0');
   retrato(cx - 46, cy + 66, 20);
   texto('× ' + sesion.vidas, cx - 14, cy + 64, 30, '#ffffff', 'left');
+  if (LUA_NIVEL[def.id]) {   // Lúa acompaña cada entrada con una frase
+    const k = clamp((tEscena - 0.5) * 2, 0, 1);
+    h.globalAlpha = k; retratoLua(cx - 250, cy + 142, 20); h.globalAlpha = 1;
+    texto('«' + LUA_NIVEL[def.id] + '»', cx - 218, cy + 142, 19, '#bfe8ff', 'left', 'italic', k);
+  }
   if (def.consejo) texto(def.consejo, cx, VH - 70, 18, '#9fb4c8', 'center', 'normal');
 }
 function hudTitulo() {
@@ -2781,7 +3504,7 @@ function hudTitulo() {
   gg.addColorStop(0, '#fff2b8'); gg.addColorStop(0.5, '#ffd25a'); gg.addColorStop(1, '#c98a1e');
   h.fillStyle = gg; h.fillText('AleUnda', cx, ty);
   texto('MUNDO 1  ·  EL BOSQUE SAGRADO', cx, ty + 80, 26, '#cfe8d0');
-  if (progreso.mundo) texto('¡Mundo 1 completado!  Trisqueles: ' + totalTrisqueles() + ' / 12', cx, ty + 118, 18, '#ffd977');
+  if (progreso.mundo) texto('¡Mundo 1 completado!  Trisqueles: ' + totalTrisqueles() + ' / ' + NUM_NIVELES * 3 + '   ·   Bellotas de plata: ' + totalPlata() + ' / ' + NUM_NIVELES, cx, ty + 118, 18, '#ffd977');
   const parp = Math.floor(reloj * 1.6) % 2 === 0;
   if (hayProgreso()) {
     if (parp) texto('Pulsa Enter para continuar', cx, VH * 0.6, 26, '#ffffff');
@@ -2793,8 +3516,43 @@ function hudTitulo() {
   texto('Pisa a los púcas  ·  esquiva los fuegos fatuos  ·  toca el menhir de la meta', cx, VH - 74, 14, '#c9b98a', 'center', 'normal');
   texto('Con mando: A saltar  ·  X voltereta  ·  RB correr', cx, VH - 46, 12, '#8fa0c0', 'center', 'normal');
 }
+// Objetos de la bolsa: se consiguen en el pozo y se preparan en el mapa antes de entrar a un nivel
+const OBJETOS = {
+  trebol4: { nombre: 'Trébol de cuatro hojas', desc: 'Empiezas el nivel con un trébol de más (aguantas 4 golpes).' },
+  pluma:   { nombre: 'Pluma de hada', desc: 'Doble salto: en el aire, pulsa Espacio otra vez.' },
+  farol:   { nombre: 'Farolillo de las hadas', desc: 'Una estela de luz te guía hacia los trisqueles que te faltan.' },
+};
+function iconoObjeto(obj, cx, cy, r) {
+  h.save();
+  const g = h.createRadialGradient(cx, cy, 0, cx, cy, r * 1.4);
+  g.addColorStop(0, obj === 'farol' ? 'rgba(255,200,90,0.5)' : obj === 'pluma' ? 'rgba(160,230,255,0.4)' : 'rgba(110,240,140,0.4)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  h.fillStyle = g; h.fillRect(cx - r * 1.5, cy - r * 1.5, r * 3, r * 3);
+  if (obj === 'trebol4') {
+    h.fillStyle = '#52d96e';
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; h.beginPath(); h.arc(cx + Math.cos(a) * r * 0.42, cy + Math.sin(a) * r * 0.42 - r * 0.1, r * 0.4, 0, TAU); h.fill(); }
+    h.strokeStyle = '#2f8a3e'; h.lineWidth = r * 0.14; h.beginPath(); h.moveTo(cx, cy); h.quadraticCurveTo(cx + r * 0.25, cy + r * 0.6, cx + r * 0.1, cy + r * 0.95); h.stroke();
+  } else if (obj === 'pluma') {
+    h.translate(cx, cy); h.rotate(-0.6);
+    h.fillStyle = '#dff6ff'; h.beginPath(); h.moveTo(0, -r);
+    h.quadraticCurveTo(r * 0.55, -r * 0.2, 0, r * 0.75); h.quadraticCurveTo(-r * 0.55, -r * 0.2, 0, -r); h.fill();
+    h.strokeStyle = '#7fc8e8'; h.lineWidth = r * 0.08; h.beginPath(); h.moveTo(0, -r * 0.85); h.lineTo(0, r * 1.0); h.stroke();
+  } else {
+    h.strokeStyle = '#3a2a16'; h.lineWidth = r * 0.12;
+    h.beginPath(); h.arc(cx, cy - r * 0.62, r * 0.25, Math.PI, 0); h.stroke();
+    h.fillStyle = '#3a2a16'; h.fillRect(cx - r * 0.45, cy - r * 0.62, r * 0.9, r * 0.16); h.fillRect(cx - r * 0.45, cy + r * 0.5, r * 0.9, r * 0.16);
+    h.fillStyle = '#ffcf6a'; h.fillRect(cx - r * 0.35, cy - r * 0.46, r * 0.7, r * 0.96);
+    h.fillStyle = '#fff3c4'; h.fillRect(cx - r * 0.12, cy - r * 0.3, r * 0.24, r * 0.6);
+  }
+  h.restore();
+}
+function flecha2D(x, y, ang, r) {
+  h.save(); h.translate(x, y); h.rotate(ang);
+  h.beginPath(); h.moveTo(r, 0); h.lineTo(-r * 0.7, -r * 0.75); h.lineTo(-r * 0.35, 0); h.lineTo(-r * 0.7, r * 0.75); h.closePath();
+  h.fillStyle = '#ffd977'; h.fill(); h.lineWidth = 2; h.strokeStyle = 'rgba(40,24,6,0.85)'; h.stroke();
+  h.restore();
+}
 function hudMapa() {
-  const cx = VW / 2;
+  const cx = VW / 2, acc = accesibles();
   panel(cx - 230, 16, 460, 64);
   texto('MUNDO 1', cx, 37, 14, '#c9b98a');
   texto('EL BOSQUE SAGRADO', cx, 61, 24, '#ffe9a8');
@@ -2804,29 +3562,109 @@ function hudMapa() {
   seta2D(92, 72, 9);
   texto('× ' + String(sesion.setas).padStart(2, '0'), 106, 71, 15, '#ffffff', 'left');
   texto(String(sesion.puntos).padStart(7, '0'), 238, 71, 14, '#ffe9a8', 'right');
-  for (let i = 0; i < 4; i++) {
-    const n = MAPA.nodos[i], q = proyectar(n.x, 0.3, n.z + 1.6);
+  panel(VW - 272, 16, 256, 78);
+  trisquel2D(VW - 246, 40, 11, '#ffd977', reloj * 0.6);
+  texto(totalTrisqueles() + '/' + NUM_NIVELES * 3, VW - 228, 40, 18, '#ffffff', 'left');
+  bellota2D(VW - 160, 40, 10, '#e8f0ff');
+  texto(totalPlata() + '/' + NUM_NIVELES, VW - 144, 40, 18, '#ffffff', 'left');
+  texto('B: bolsa (' + progreso.bolsa.length + '/' + BOLSA_MAX + ')    V: capucha', VW - 252, 72, 13, '#c9b98a', 'left', 'normal');
+  if (progreso.preparado) iconoObjeto(progreso.preparado, VW - 44, 48, 12);
+  // etiquetas de los nodos
+  for (const id in NODOS) {
+    const n = NODOS[id], q = proyectar(n.x, 0.3, n.z + 1.6);
     if (!q) continue;
-    const st = estadoNodo(i);
-    rectRedondo(q[0] - 30, q[1] - 2, 60, 26, 8);
-    h.fillStyle = st === 'cerrado' ? 'rgba(20,24,32,0.75)' : 'rgba(10,18,26,0.85)'; h.fill();
-    h.lineWidth = 2; h.strokeStyle = st === 'hecho' ? '#ffd977' : st === 'abierto' ? '#cfe8ff' : 'rgba(255,255,255,0.2)'; h.stroke();
-    texto(NIVELES[i].id, q[0], q[1] + 11, 16, st === 'cerrado' ? 'rgba(255,255,255,0.35)' : '#ffffff');
-    if (st !== 'cerrado') for (let k = 0; k < 3; k++) {
-      h.fillStyle = progreso.trisqueles[i][k] ? '#ffd977' : 'rgba(255,255,255,0.22)';
+    const abierto = acc.has(id), hecho = superado(id);
+    let etiqueta = id;
+    if (n.tipo === 'pozo') etiqueta = 'Pozo';
+    else if (n.tipo === 'puerta') etiqueta = Math.min(totalTrisqueles(), TRISQUELES_PUERTA) + '/' + TRISQUELES_PUERTA;
+    else if (!abierto && id === '1-S') etiqueta = '?';
+    rectRedondo(q[0] - 32, q[1] - 2, 64, 26, 8);
+    h.fillStyle = abierto ? 'rgba(10,18,26,0.85)' : 'rgba(20,24,32,0.7)'; h.fill();
+    h.lineWidth = 2;
+    h.strokeStyle = !abierto ? 'rgba(255,255,255,0.2)' : n.tipo === 'nivel' && hecho ? '#ffd977' : n.tipo === 'puerta' ? (hecho ? '#c9a8ff' : '#8a6aa8') : '#cfe8ff';
+    h.stroke();
+    if (n.tipo === 'puerta') trisquel2D(q[0] - 18, q[1] + 11, 7, hecho ? '#ffd977' : 'rgba(255,217,119,0.6)');
+    texto(etiqueta, q[0] + (n.tipo === 'puerta' ? 6 : 0), q[1] + 11, 15, abierto ? '#ffffff' : 'rgba(255,255,255,0.35)');
+    if (n.tipo === 'nivel' && abierto) for (let k = 0; k < 3; k++) {
+      h.fillStyle = progreso.trisqueles[n.nivel][k] ? '#ffd977' : 'rgba(255,255,255,0.22)';
       h.beginPath(); h.arc(q[0] - 12 + k * 12, q[1] + 34, 4, 0, TAU); h.fill();
     }
+    if (n.tipo === 'nivel' && abierto && progreso.plata[n.nivel]) bellota2D(q[0] + 26, q[1] + 34, 5, '#e8f0ff');
   }
-  const i = mapa.ruta ? mapa.destino : mapa.nodo, def = NIVELES[i];
-  panel(cx - 300, VH - 124, 600, 102);
-  texto(def.id + '  ·  ' + def.nombre, cx, VH - 96, 26, '#ffe9a8');
-  for (let k = 0; k < 3; k++) trisquel2D(cx - 36 + k * 36, VH - 64, 11, progreso.trisqueles[i][k] ? '#ffd977' : 'rgba(255,255,255,0.2)');
-  texto(progreso.mundo ? 'Enter: jugar   ·   ← →: elegir nivel   ·   Mundo 2: próximamente' : 'Enter: ¡a jugar!   ·   ← →: elegir nivel   ·   Esc: portada',
-    cx, VH - 37, 15, '#c9d8c0', 'center', 'normal');
+  // flechas de los caminos que puedes tomar desde aquí
+  if (escena === 'mapa' && !mapa.ruta && !mapa.panel && !dialogo) {
+    const nq = proyectar(mapa.x, 0.3, mapa.z);
+    for (const s of salidasMapa(acc)) {
+      if (!s.abierta || !nq) continue;
+      const p = s.r[Math.min(5, s.r.length - 1)], q = proyectar(p[0], 0.3, p[1]);
+      if (!q) continue;
+      const ang = Math.atan2(q[1] - nq[1], q[0] - nq[0]), k = 4 * Math.sin(reloj * 5);
+      flecha2D(q[0] + Math.cos(ang) * k, q[1] + Math.sin(ang) * k, ang, 10);
+    }
+  }
+  // panel inferior: qué hay en el nodo (se oculta mientras alguien habla)
+  if (dialogo) { dibujarAviso(); return; }
+  const id = mapa.ruta ? mapa.destino : mapa.nodo, n = NODOS[id];
+  if (progreso.preparado) texto('Preparado para el próximo nivel: ' + OBJETOS[progreso.preparado].nombre, cx, VH - 140, 15, '#8dffa8');
+  panel(cx - 310, VH - 124, 620, 104);
+  if (n.tipo === 'nivel') {
+    const def = NIVELES[n.nivel];
+    texto(def.id + '  ·  ' + def.nombre, cx, VH - 98, 25, '#ffe9a8');
+    for (let k = 0; k < 3; k++) trisquel2D(cx - 36 + k * 36, VH - 67, 11, progreso.trisqueles[n.nivel][k] ? '#ffd977' : 'rgba(255,255,255,0.2)');
+    texto('Enter: ¡a jugar!   ·   Flechas: elegir camino   ·   B: bolsa', cx, VH - 38, 15, '#c9d8c0', 'center', 'normal');
+  } else if (n.tipo === 'pozo') {
+    texto('Pozo de los deseos', cx, VH - 98, 25, '#9ff0ff');
+    texto(progreso.deseoUsado ? 'Lanza ' + COSTE_DESEO + ' setas y recibe un objeto para tu bolsa' : '¡El pozo te regala tu primer deseo!', cx, VH - 68, 17, '#e8eefc', 'center', 'normal');
+    texto('Enter: asomarse al pozo   ·   Flechas: elegir camino   ·   B: bolsa', cx, VH - 38, 15, '#c9d8c0', 'center', 'normal');
+  } else {
+    texto('Puerta de piedra', cx, VH - 98, 25, '#d8b8ff');
+    texto(superado('puerta') ? 'Abierta: el camino al claro secreto está libre' : 'Se abre con ' + TRISQUELES_PUERTA + ' trisqueles dorados (tienes ' + totalTrisqueles() + ')', cx, VH - 68, 17, '#e8eefc', 'center', 'normal');
+    texto('Flechas: elegir camino   ·   B: bolsa', cx, VH - 38, 15, '#c9d8c0', 'center', 'normal');
+  }
+  if (mapa.panel === 'bolsa') hudBolsa();
+  else if (mapa.panel === 'pozo') hudPozo();
   dibujarAviso();
 }
+function hudBolsa() {
+  const cx = VW / 2, cy = VH / 2;
+  h.fillStyle = 'rgba(3,6,12,0.55)'; h.fillRect(0, 0, VW, VH);
+  panel(cx - 280, cy - 160, 560, 320, 0.88);
+  texto('BOLSA DE ALEUNDA', cx, cy - 126, 24, '#ffe9a8');
+  for (let i = 0; i < BOLSA_MAX; i++) {
+    const x = cx - 165 + i * 110, y = cy - 46, obj = progreso.bolsa[i], sel = i === mapa.sel && obj;
+    rectRedondo(x - 42, y - 42, 84, 84, 12);
+    h.fillStyle = sel ? 'rgba(60,48,20,0.9)' : 'rgba(20,26,34,0.85)'; h.fill();
+    h.lineWidth = sel ? 3 : 1.5; h.strokeStyle = sel ? '#ffd977' : 'rgba(232,179,58,0.35)'; h.stroke();
+    if (obj) iconoObjeto(obj, x, y, 26);
+  }
+  const obj = progreso.bolsa[mapa.sel];
+  if (obj) {
+    texto(OBJETOS[obj].nombre, cx, cy + 34, 21, '#ffe9a8');
+    texto(OBJETOS[obj].desc, cx, cy + 64, 15, '#cfe8d0', 'center', 'normal');
+  } else texto('La bolsa está vacía: pide un deseo en el pozo.', cx, cy + 46, 17, '#cfe8d0', 'center', 'normal');
+  if (progreso.preparado) texto('Ya preparado: ' + OBJETOS[progreso.preparado].nombre + ' (si eliges otro, vuelve a la bolsa)', cx, cy + 96, 14, '#8dffa8', 'center', 'normal');
+  texto('← →: elegir   ·   Enter: preparar para el próximo nivel   ·   B o Esc: cerrar', cx, cy + 130, 14, '#c9b98a', 'center', 'normal');
+}
+function hudPozo() {
+  const cx = VW / 2, cy = VH / 2;
+  h.fillStyle = 'rgba(3,6,12,0.55)'; h.fillRect(0, 0, VW, VH);
+  panel(cx - 280, cy - 150, 560, 300, 0.88);
+  texto('POZO DE LOS DESEOS', cx, cy - 116, 24, '#9ff0ff');
+  texto(progreso.deseoUsado ? 'Lanza ' + COSTE_DESEO + ' setas al agua y pide un deseo.' : 'El pozo te regala tu primer deseo.', cx, cy - 82, 17, '#e8eefc', 'center', 'normal');
+  seta2D(cx - 130, cy - 46, 10);
+  texto('Tienes ' + sesion.setas + ' setas   ·   Bolsa ' + progreso.bolsa.length + '/' + BOLSA_MAX, cx + 10, cy - 46, 16, '#ffffff', 'center', 'normal');
+  const d = mapa.deseo;
+  if (d) {
+    const k = clamp(d.t * 3, 0, 1), y = cy + 16 - (1 - k) * 20;
+    h.globalAlpha = k; iconoObjeto(d.obj, cx, y, 26 + Math.sin(reloj * 4) * 2); h.globalAlpha = 1;
+    texto('¡' + OBJETOS[d.obj].nombre + '!', cx, cy + 62, 21, '#ffe9a8', 'center', 'bold', k);
+    texto(OBJETOS[d.obj].desc, cx, cy + 90, 15, '#cfe8d0', 'center', 'normal', k);
+  } else texto('Los deseos van a tu bolsa (B). Prepáralos en el mapa antes de entrar a un nivel.', cx, cy + 30, 15, '#cfe8d0', 'center', 'normal');
+  texto('Enter: pedir un deseo   ·   B o Esc: salir', cx, cy + 124, 14, '#c9b98a', 'center', 'normal');
+}
 function hudFinal() {
-  const cx = VW / 2, a = clamp(tEscena / 1.2, 0, 1);
+  if (!finalHablado) return;   // primero hablan; luego aparece el resumen
+  const cx = VW / 2, a = clamp(tPanelFinal / 1.2, 0, 1);
   h.globalAlpha = a;
   panel(cx - 330, VH * 0.12, 660, 250, 0.7);
   h.globalAlpha = 1;
@@ -2834,14 +3672,15 @@ function hudFinal() {
   texto('¡MUNDO 1 COMPLETADO!', cx, VH * 0.12 + 92, 40, '#ffe9a8', 'center', 'bold', a);
   texto('El Bosque Sagrado vuelve a brillar gracias a AleUnda.', cx, VH * 0.12 + 136, 19, '#cfe8d0', 'center', 'normal', a);
   texto('Pero la Banshee huyó hacia las Colinas de Niebla...  Mundo 2: próximamente.', cx, VH * 0.12 + 164, 17, '#9fb4c8', 'center', 'normal', a);
-  texto('Puntos: ' + sesion.puntos + '     Trisqueles: ' + totalTrisqueles() + ' / 12', cx, VH * 0.12 + 204, 18, '#ffd977', 'center', 'bold', a);
-  if (tEscena > 3 && Math.floor(reloj * 1.6) % 2 === 0) texto('Pulsa Enter para volver al mapa', cx, VH - 60, 22, '#ffffff');
+  texto('Puntos: ' + sesion.puntos + '     Trisqueles: ' + totalTrisqueles() + ' / ' + NUM_NIVELES * 3, cx, VH * 0.12 + 204, 18, '#ffd977', 'center', 'bold', a);
+  if (tPanelFinal > 1.5 && Math.floor(reloj * 1.6) % 2 === 0) texto('Pulsa Enter para volver al mapa', cx, VH - 60, 22, '#ffffff');
 }
 function hudFin() {
   h.fillStyle = '#04060c'; h.fillRect(0, 0, VW, VH);
   const cx = VW / 2, cy = VH / 2;
   texto('SIN VIDAS', cx, cy - 40, 54, '#ffb08a');
-  texto('Los púcas celebran... por ahora.', cx, cy + 14, 20, '#9fb4c8', 'center', 'normal');
+  retratoLua(cx - 200, cy + 18, 18);
+  texto('«No te rindas, AleUnda. El bosque te espera.»', cx - 172, cy + 18, 20, '#bfe8ff', 'left', 'italic');
   if (tEscena > 1.5 && Math.floor(reloj * 1.6) % 2 === 0) texto('Pulsa Enter para volver al mapa (tu progreso sigue guardado)', cx, cy + 80, 18, '#ffffff', 'center', 'normal');
 }
 
@@ -2855,33 +3694,56 @@ function actualizarFundido(dt) {
   fundido.a = clamp(fundido.a + fundido.dir * dt * 3.2, 0, 1);
   if (fundido.dir > 0 && fundido.a >= 1 && fundido.accion) { const f = fundido.accion; fundido.accion = null; fundido.dir = -1; f(); }
 }
-function irAlMapa(desbloquear) {
+function irAlMapa() {
   if (nivel) { liberarNivel(nivel); nivel = null; }
   pararAmbiente(); pausado = false; parts.length = 0; flotantes.length = 0; aviso = null; rayo = 0;
-  escena = 'mapa'; tEscena = 0; mapa.ruta = null;
-  const n = MAPA.nodos[mapa.nodo];
+  escena = 'mapa'; tEscena = 0; mapa.ruta = null; mapa.panel = null;
+  sesion.objeto = null;   // el objeto preparado se gasta en el nivel
+  if (!NODOS[mapa.nodo]) mapa.nodo = '1-1';
+  const n = NODOS[mapa.nodo];
   mapa.x = mapa.camX = n.x; mapa.z = mapa.camZ = n.z;
-  if (desbloquear >= 0) { mapa.anim = { nodo: desbloquear, t: 0 }; sfx('brota'); avisar('¡Se abrió el camino al ' + NIVELES[desbloquear].id + '!', 2.6); }
+  // caminos recién abiertos: se revelan piedra a piedra
+  const acc = accesibles(), nuevos = [...acc].filter(id => !mapa.conocidos.has(id));
+  if (nuevos.length) {
+    mapa.nuevos = nuevos; mapa.tNuevos = 0;
+    for (const e of MAPA.aristas) if (acc.has(e.a) && acc.has(e.b) && (nuevos.includes(e.a) || nuevos.includes(e.b))) e.aparece = 0;
+    if (nuevos.includes('1-S')) { sfx('puerta'); avisar('¡La puerta de piedra se abrió!', 2.8); }
+    else {
+      const niv = nuevos.filter(id => NODOS[id].tipo === 'nivel');
+      const lista = niv.length > 1 ? niv.slice(0, -1).join(', ') + ' y ' + niv[niv.length - 1] : niv.join('');
+      sfx('brota'); avisar(niv.length ? '¡Nuevo camino hacia ' + lista + '!' : '¡Nuevo camino!', 2.6);
+    }
+  }
+  mapa.conocidos = acc;
+  progreso.nodo = mapa.nodo; guardarProgreso();
+  peligroActivo = false; peligroMusica(false); dialogo = null;
+  colocarHada(mapa.x, 0, mapa.z);
   tocarMusica('mapa');
+  const k = siguienteHistoria();
+  if (k) iniciarDialogo(k);
 }
 function empezarNivel(i, desdeControl) {
   if (!desdeControl) sesion.control = null;
   if (nivel) liberarNivel(nivel);
   parts.length = 0; flotantes.length = 0; aviso = null; pausado = false; congelado = 0; sacudida = 0; acum = 0; rayo = 0;
-  sesion.nivel = i; sesion.corazones = CORAZONES_MAX; mapa.nodo = i;
+  sesion.corazonesMax = CORAZONES_MAX + (sesion.objeto === 'trebol4' ? 1 : 0);
+  sesion.nivel = i; sesion.corazones = sesion.corazonesMax; mapa.nodo = NIVELES[i].id;
   nivel = crearNivel(NIVELES[i], i);
   let { x, y, z } = nivel.inicio;
   const c = sesion.control != null ? nivel.controles[sesion.control] : null;
   if (c) { c.activo = true; c.brillo = 1; x = c.sx; y = c.y; z = c.sz; }
   reiniciarAleUnda(x, y, z);
+  colocarHada(x, y, z); hada.dice = null; dialogo = null;
+  peligroActivo = false; peligroMusica(false); tSilencio = 0;
   actualizarCamara(0);
   pararMusica(0.2); pararAmbiente();
   escena = 'intro'; tEscena = 0;
 }
 function actualizarJuego(dt, e, libre) {
+  if (dialogo) { actualizarDialogo(dt, libre ? e : NADA); efectosNivel(dt); return; }
   if (libre && e.pausaP && ale.estado === 'normal') { pausado = !pausado; sfx('pausa'); volumenMusica(pausado ? 0.35 : 1); }
   if (pausado) {
-    if (libre && e.mapaP) { pausado = false; pararMusica(0.2); cambiar(() => irAlMapa(-1)); }
+    if (libre && e.mapaP) { pausado = false; pararMusica(0.2); cambiar(() => irAlMapa()); }
     return;
   }
   const ent = libre ? e : NADA;
@@ -2901,13 +3763,32 @@ function efectosNivel(dt) {
   actualizarParts(dt);
   sacudida = Math.max(0, sacudida - dt * 1.6);
   actualizarCamara(dt);
-  if (nivel.def.ambiente === 'tormenta') {
+  if (nivel.def.ambiente === 'tormenta' && escena !== 'final') {
     tRayo -= dt;
     if (tRayo <= 0) { rayo = 1; tRayo = alea(0.5, 1.6) * RELAMPAGO_CADA; truenoEn = alea(0.3, 1.2); }
     if (truenoEn > 0) { truenoEn -= dt; if (truenoEn <= 0) sfx('trueno'); }
   }
   rayo = Math.max(0, rayo - dt * 2.5);
   if (nivel.def.ambiente === 'noche') { tBuho -= dt; if (tBuho <= 0) { sfx('buho'); tBuho = alea(18, 35); } }
+  for (const c of nivel.carteles) {
+    const cerca = ale.estado === 'normal' && Math.hypot(ale.x - c.x, ale.z - c.z) < 3.4 && Math.abs(ale.y - c.y) < 3;
+    c.a = suave(c.a, cerca ? 1 : 0, 8, dt);
+    if (cerca && !c.leido) { c.leido = true; sfx('cartel'); }
+  }
+  destello = Math.max(0, destello - dt * 1.5);
+  for (const c of nivel.caminos) {
+    if (!c.visto && ale.estado === 'normal' && Math.hypot(ale.x - c.x, ale.z - c.z) < RADIO_CAMINO_HADAS && Math.abs(ale.y - c.y) < 4) {
+      c.visto = true; sfx('hadas');
+      luaDice('¡Un camino de hadas! Solo aparece cuando te acercas.', 3, 'camino');
+    }
+    c.a = suave(c.a, c.visto ? 1 : 0, 6, dt);
+  }
+  if (ale.estado !== 'muerto') actualizarHada(dt, ale.x, ale.y, ale.z);
+  else if (hada.dice) hada.dice = null;
+  const peligro = escena === 'juego' && ale.estado === 'normal' && sesion.corazones === 1;
+  if (peligro !== peligroActivo) { peligroActivo = peligro; peligroMusica(peligro); }
+  if (peligro) { tLatido -= dt; if (tLatido <= 0) { sfx('latido'); tLatido = 0.85; } }
+  if (tSilencio > 0) { tSilencio -= dt; if (tSilencio <= 0 && !pausado) volumenMusica(1); }
 }
 function actualizar(dt, e) {
   reloj += dt; tEscena += dt;
@@ -2916,10 +3797,15 @@ function actualizar(dt, e) {
   const libre = !fundido.accion && fundido.a < 0.6, ent = libre ? e : NADA;
   switch (escena) {
     case 'titulo':
-      if (ent.nuevaP && hayProgreso()) { borrarProgreso(); reiniciarSesion(); mapa.nodo = 0; sfx('elegir'); cambiar(() => irAlMapa(-1)); }
-      else if (ent.okP) { sfx('elegir'); mapa.nodo = Math.min(mapa.nodo, maxNodo()); cambiar(() => irAlMapa(-1)); }
+      actualizarHada(dt, mapa.x, 0, mapa.z); actualizarParts(dt);
+      if (ent.nuevaP && hayProgreso()) { borrarProgreso(); reiniciarSesion(); mapa.nodo = '1-1'; reiniciarMapa(); sfx('elegir'); cambiar(() => irAlMapa()); }
+      else if (ent.okP) { sfx('elegir'); if (!accesibles().has(mapa.nodo)) mapa.nodo = '1-1'; cambiar(() => irAlMapa()); }
       break;
-    case 'mapa': actualizarMapa(dt, ent); break;
+    case 'mapa':
+      if (dialogo) { actualizarDialogo(dt, ent); actualizarMapa(dt, NADA); }
+      else actualizarMapa(dt, ent);
+      actualizarHada(dt, mapa.x, 0, mapa.z);
+      break;
     case 'intro':
       if (tEscena > 2.6) {
         escena = 'juego'; tEscena = 0; fundido.a = 1; fundido.dir = -1;
@@ -2935,10 +3821,12 @@ function actualizar(dt, e) {
         const x = ale.x + alea(-6, 6), y = ale.y + alea(4, 8), z = ale.z + alea(-6, 3);
         estallido(x, y, z, 26, [C.oroClaro, C.runaVerde, C.setaViol, C.runa][Math.floor(Math.random() * 4)], 4.5, { g: 3, vida: 1.5 });
       }
-      if (tEscena > 3 && ent.okP) cambiar(() => irAlMapa(-1));
+      if (!finalHablado && !dialogo && tEscena > 1.8) iniciarDialogo('final', () => { finalHablado = true; tPanelFinal = 0; });
+      if (dialogo) actualizarDialogo(dt, ent);
+      else if (finalHablado) { tPanelFinal += dt; if (tPanelFinal > 1.5 && ent.okP) cambiar(() => irAlMapa()); }
       break; }
     case 'gameover':
-      if (tEscena > 1.5 && ent.okP) { reiniciarSesion(); cambiar(() => irAlMapa(-1)); }
+      if (tEscena > 1.5 && ent.okP) { reiniciarSesion(); cambiar(() => irAlMapa()); }
       break;
   }
   if (aviso) { aviso.t += dt; if (aviso.t > aviso.dur) aviso = null; }
@@ -2958,6 +3846,8 @@ function render() {
   else if (escena === 'juego') { hudJuego(); if (pausado) hudPausa(); }
   else if (escena === 'final') hudFinal();
   else if (escena === 'gameover') hudFin();
+  if (dialogo && escena !== 'intro') hudDialogo();
+  if (destello > 0.01 && escena === 'juego') { h.fillStyle = `rgba(190,255,210,${destello * 0.45})`; h.fillRect(0, 0, VW, VH); }
   if (fundido.a > 0.001) { h.fillStyle = `rgba(3,5,10,${fundido.a})`; h.fillRect(0, 0, VW, VH); }
 }
 let ultimo = performance.now();
@@ -2974,8 +3864,8 @@ function bucle(ahora) {
 cargarProgreso();
 crearModelos();
 construirMapa();
-mapa.nodo = maxNodo();
-{ const n = MAPA.nodos[mapa.nodo]; mapa.x = mapa.camX = n.x; mapa.z = mapa.camZ = n.z; }
+mapa.nodo = progreso.nodo;
+reiniciarMapa();
 gl.enable(gl.DEPTH_TEST);
 tocarMusica('mapa');   // empieza a sonar con la primera tecla (los navegadores lo exigen)
 requestAnimationFrame(bucle);
