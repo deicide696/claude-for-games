@@ -37,6 +37,14 @@ const CAMARA_FUNDIDO_CERCA = 5;    // el decorado a menos de esta distancia de l
 const ROBLE_ALTO = 9;              // tronco de los robles del camino: alto para que la copa quede por encima de la cámara
 const ARENA_CLARO = 8;             // claro sin árboles delante de la arena del jefe (más allá de su borde)
 
+// --- Aspecto de AleUnda: pelo largo, suelto y rizado, con raya al medio ---
+const PELO_RAIZ = '#5e3518';       // color del pelo junto a la cabeza (castaño)
+const PELO_PUNTA = '#e2a650';      // color de las puntas de los rizos (rubio miel)
+const PELO_LARGO = 0.66;           // cuánto bajan los rizos por la espalda desde la capucha (AleUnda mide 1.5)
+const PELO_VOLUMEN = 1;            // lo esponjoso que es el pelo (1 = normal; más = más ancho)
+const PELO_RIZO = 9;               // vueltas de tirabuzón por cada unidad de largo (más = rizo más cerrado)
+const PELO_DETALLE = 6;            // lados del tubo de cada rizo (más = más suave, pero más trabajo)
+
 // --- Partida ---
 const VIDAS_INICIALES = 5;         // vidas al empezar (y tras un fin de juego)
 const CORAZONES_MAX = 3;           // tréboles de vida: golpes que aguanta AleUnda
@@ -150,7 +158,7 @@ const C = {
   piedra: hx('#80868e'), piedraOsc: hx('#545a62'), musgo: hx('#4e7e3c'), empedrado: hx('#8d8c86'),
   corteza: hx('#4b3b2f'), cortezaClara: hx('#6a5442'), hoja: hx('#2e5e34'), hojaClara: hx('#3f7c40'), hojaOsc: hx('#1d4027'),
   oro: hx('#e8b33a'), oroClaro: hx('#ffd977'), runa: hx('#7fe8ff'), runaVerde: hx('#8dffa8'),
-  piel: hx('#f4c9a3'), mejilla: hx('#ea8f7e'), pelo: hx('#c9472b'), capa: hx('#2f6d3b'), capaOsc: hx('#20502b'),
+  piel: hx('#f4c9a3'), mejilla: hx('#ea8f7e'), pelo: hx(PELO_RAIZ), peloPunta: hx(PELO_PUNTA), capa: hx('#2f6d3b'), capaOsc: hx('#20502b'),
   tunica: hx('#3f9150'), cinturon: hx('#5e3b20'), pantalon: hx('#4a3628'), bota: hx('#2b1d14'), ojo: hx('#1d1410'),
   blanco: [1, 1, 1], caldero: hx('#2b2b33'),
   puca: hx('#221c2e'), pucaClaro: hx('#3a3248'), pucaOjo: hx('#ffcf3a'), cola: hx('#ddd6ea'),
@@ -455,6 +463,35 @@ class Malla {
     }
     return this;
   }
+  // tubo de normales suaves que sigue una lista de puntos (rizos de pelo); radio y color van punto a punto.
+  // El aro se arrastra de un punto al siguiente sin girar, y los dos extremos se cierran en punta redonda.
+  tubo(P, R, Cl, lados = 6) {
+    let n1 = null, prev = null, tg = null;
+    for (let i = 0; i < P.length; i++) {
+      const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)];
+      tg = norm3([b[0] - a[0], b[1] - a[1], b[2] - a[2]]);
+      if (!n1) n1 = norm3(cruz(tg, Math.abs(tg[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0]));
+      else { const k = n1[0] * tg[0] + n1[1] * tg[1] + n1[2] * tg[2]; n1 = norm3([n1[0] - tg[0] * k, n1[1] - tg[1] * k, n1[2] - tg[2] * k]); }
+      const n2 = cruz(tg, n1), aro = [];
+      for (let s = 0; s <= lados; s++) {
+        const ang = s / lados * TAU, c = Math.cos(ang), sn = Math.sin(ang);
+        const nr = [n1[0] * c + n2[0] * sn, n1[1] * c + n2[1] * sn, n1[2] * c + n2[2] * sn];
+        aro.push([[P[i][0] + nr[0] * R[i], P[i][1] + nr[1] * R[i], P[i][2] + nr[2] * R[i]], nr]);
+      }
+      if (prev) for (let s = 0; s < lados; s++) {
+        const A = prev[s], B = prev[s + 1], Cc = aro[s + 1], D = aro[s];
+        this.vert(A[0], A[1], Cl[i - 1]); this.vert(B[0], B[1], Cl[i - 1]); this.vert(Cc[0], Cc[1], Cl[i]);
+        this.vert(A[0], A[1], Cl[i - 1]); this.vert(Cc[0], Cc[1], Cl[i]); this.vert(D[0], D[1], Cl[i]);
+      } else {
+        const ti = [P[0][0] - tg[0] * R[0], P[0][1] - tg[1] * R[0], P[0][2] - tg[2] * R[0]], nt = [-tg[0], -tg[1], -tg[2]];
+        for (let s = 0; s < lados; s++) { this.vert(aro[s][0], aro[s][1], Cl[0]); this.vert(ti, nt, Cl[0]); this.vert(aro[s + 1][0], aro[s + 1][1], Cl[0]); }
+      }
+      prev = aro;
+    }
+    const u = P.length - 1, tf = [P[u][0] + tg[0] * R[u], P[u][1] + tg[1] * R[u], P[u][2] + tg[2] * R[u]];
+    for (let s = 0; s < lados; s++) { this.vert(prev[s][0], prev[s][1], Cl[u]); this.vert(prev[s + 1][0], prev[s + 1][1], Cl[u]); this.vert(tf, tg, Cl[u]); }
+    return this;
+  }
   disco(m, col, seg = 16) {
     const c = xf(m, 0, 0, 0);
     for (let i = 0; i < seg; i++) {
@@ -507,10 +544,55 @@ function humo(x, y, z, tam, c, a = 1) {
 // =====================================================================
 const MOD = {};
 const IDENT = m4();
-// AleUnda: capucha puntiaguda, trenzas pelirrojas, torque dorado y su caldero.
+// Pelo de AleUnda: rizos largos y sueltos que salen de debajo de la capucha, con raya al medio.
+// Cada rizo es un tirabuzón (un tubo en espiral cerrada) alrededor de un alma más oscura que baja
+// por una curva (raíz → abombado → punta); pasa de castaño en la raíz a miel en las puntas.
+function peloAle(M) {
+  const vol = PELO_VOLUMEN, zc = -0.02, yR = 1.27;   // zc: centro de la cabeza; yR: justo bajo el borde de la capucha
+  const rizo = (p0, p1, p2, g, claro = 1) => {
+    const largo = Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]) + Math.hypot(p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]);
+    const vueltas = largo * PELO_RIZO * (0.85 + azar() * 0.3), n = Math.ceil(vueltas * 9) + 2, fase = azar() * TAU;
+    const mecha = 0.45 + azar() * 0.4;                  // unos rizos aclaran antes que otros (mechas)
+    const esp = [], espR = [], espC = [], alma = [], almaR = [], almaC = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, u = 1 - t, b = [], d = [];
+      for (let k = 0; k < 3; k++) { b.push(u * u * p0[k] + 2 * u * t * p1[k] + t * t * p2[k]); d.push(u * (p1[k] - p0[k]) + t * (p2[k] - p1[k])); }
+      const tg = norm3(d), e1 = norm3(cruz(tg, Math.abs(tg[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0])), e2 = cruz(tg, e1);
+      const a = fase + t * vueltas * TAU, amp = g * 0.5 * Math.min(1, 0.25 + t * 2.5), ca = Math.cos(a) * amp, sa = Math.sin(a) * amp;
+      const col = escCol(mezcla(C.pelo, C.peloPunta, Math.pow(t, mecha)), claro);
+      esp.push([b[0] + e1[0] * ca + e2[0] * sa, b[1] + e1[1] * ca + e2[1] * sa, b[2] + e1[2] * ca + e2[2] * sa]);
+      espR.push(g * 0.5 * (1 - 0.45 * t)); espC.push(col);
+      if (i % 5 === 0 || i === n) { alma.push(b); almaR.push(g * 0.45 * (1 - 0.5 * t)); almaC.push(escCol(col, 0.6)); }
+    }
+    M.tubo(alma, almaR, almaC, 5);
+    M.tubo(esp, espR, espC, PELO_DETALLE);
+  };
+  // masa oscura bajo los rizos de la espalda: tapa los huecos entre ellos
+  M.esfera(mat(0, yR - PELO_LARGO * 0.5, -0.25, 0, 0.27 * vol, PELO_LARGO * 0.5, 0.11, 0.15), escCol(C.pelo, 0.6), 10, 7, { suave: true });
+  // rizos de la espalda: nacen alrededor de la nuca y caen abriéndose sobre la capa (el pelo rizado se
+  // ensancha hacia abajo); la capa de dentro, más corta y oscura, rellena los huecos entre los de fuera
+  for (let i = 0; i < 15; i++) {
+    const dentro = i % 2 === 1, ri = dentro ? 0.9 : 1, th = (i / 14 - 0.5) * 3.4 + (azar() - 0.5) * 0.12;
+    const lado = Math.abs(th) / 1.7, fi = th * 0.78 + (azar() - 0.5) * 0.15;
+    const largo = PELO_LARGO * (1 - lado * lado * 0.35) * (dentro ? 0.9 : 1) * (0.88 + azar() * 0.24);
+    rizo([Math.sin(th) * 0.24, yR, zc - Math.cos(th) * 0.24],
+         [Math.sin(th) * 0.33 * vol * ri, yR - largo * 0.35, zc - Math.cos(th) * 0.32 * vol * ri],
+         [Math.sin(fi) * 0.38 * vol * ri, yR - largo, -0.1 - Math.cos(fi) * 0.31 * ri],
+         (dentro ? 0.075 : 0.085) * (0.92 + azar() * 0.16), (dentro ? 0.8 : 0.92) + azar() * 0.16);
+  }
+  for (const s of [-1, 1]) {
+    // flequillo partido: dos mechones que bajan desde la raya hacia las sienes
+    M.esfera(mat(s * 0.12, 1.37, 0.14, 0, 0.15, 0.07, 0.16, 0, -s * 0.22), mezcla(C.pelo, C.peloPunta, 0.4), 10, 6, { suave: true });
+    // rizos que enmarcan la cara y caen por delante de los hombros
+    rizo([s * 0.19, 1.3, 0.2], [s * 0.31, 1.1, 0.18], [s * 0.19, 0.74, 0.27], 0.068, 0.95 + azar() * 0.15);
+    rizo([s * 0.23, 1.29, 0.12], [s * 0.37, 1.08, 0.12], [s * 0.26, 0.8, 0.17], 0.068, 0.9 + azar() * 0.15);
+  }
+}
+// AleUnda: capucha puntiaguda, pelo largo y rizado, torque dorado y su caldero.
 // Se rehace al cambiar de capucha (los colores salen del traje elegido).
 function crearModeloAle() {
   const t = trajeActual(), T = { capa: hx(t.capa), capaOsc: hx(t.capaOsc), tunica: hx(t.tunica) };
+  const azarFuera = azar; azar = semilla(1757);   // azar propio: el peinado sale igual cada vez que se rehace
   borrarMalla(MOD.aleCuerpo); borrarMalla(MOD.alePierna); borrarMalla(MOD.aleBrazo);
   MOD.aleCuerpo = hacer(M => {
     M.cilindro(mat(0, 0.4, 0, 0, 0.36, 0.58, 0.32), T.tunica, 12, 0.66);              // túnica
@@ -527,12 +609,7 @@ function crearModeloAle() {
     }
     M.esfera(mat(0, 1.215, 0.29, 0, 0.04), escCol(C.piel, 0.92), 8, 5, { suave: true }); // nariz
     M.caja(mat(0, 1.14, 0.27, 0, 0.07, 0.018, 0.02), hx('#9a4a3a'));                  // sonrisa
-    M.esfera(mat(0, 1.37, 0.13, 0, 0.25, 0.09, 0.17), C.pelo, 10, 6);                  // flequillo
-    for (const s of [-1, 1]) {                                                        // trenzas
-      for (const [x, y, z, r] of [[0.24, 1.12, 0, 0.08], [0.265, 1.0, 0.02, 0.072], [0.275, 0.89, 0.04, 0.066], [0.28, 0.79, 0.05, 0.058]])
-        M.esfera(mat(s * x, y, z, 0, r), C.pelo, 8, 6);
-      M.esfera(mat(s * 0.28, 0.71, 0.05, 0, 0.045), C.oro, 6, 4);
-    }
+    peloAle(M);                                                                       // pelo
     M.cilindro(mat(0, 1.28, -0.02, 0, 0.31, 0.12, 0.31), T.capa, 12, 1);              // borde de la capucha
     M.cilindro(mat(0, 1.34, -0.04, 0, 0.31, 0.64, 0.31, -0.38), T.capa, 12, 0.02);     // capucha
     M.esfera(mat(0, 1.34 + 0.64 * Math.cos(-0.38), -0.04 + 0.64 * Math.sin(-0.38), 0, 0.055), C.oroClaro, 6, 4);
@@ -548,6 +625,7 @@ function crearModeloAle() {
     M.cilindro(mat(0, -0.34, 0, 0, 0.075, 0.36, 0.075), T.tunica, 8, 0.9);
     M.esfera(mat(0, -0.38, 0, 0, 0.075), C.piel, 8, 6, { suave: true });
   });
+  azar = azarFuera;
 }
 function crearModelos() {
   azar = semilla(42);
@@ -3357,8 +3435,18 @@ function sol2D(cx, cy, r, col) {
   for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; h.beginPath(); h.moveTo(cx + Math.cos(a) * r * 0.72, cy + Math.sin(a) * r * 0.72); h.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); h.stroke(); }
 }
 function retrato(cx, cy, r) {
-  h.fillStyle = '#c9472b';
-  for (const s of [-1, 1]) for (let k = 0; k < 4; k++) { h.beginPath(); h.arc(cx + s * r * 0.85, cy + r * (0.1 + k * 0.38), r * (0.3 - k * 0.03), 0, TAU); h.fill(); }
+  // pelo largo y rizado: tres tirabuzones por lado, castaños en la raíz y miel en las puntas
+  const pelo = h.createLinearGradient(0, cy - r * 0.4, 0, cy + r * 1.5);
+  pelo.addColorStop(0, PELO_RAIZ); pelo.addColorStop(1, PELO_PUNTA);
+  h.fillStyle = PELO_RAIZ; h.beginPath(); h.ellipse(cx, cy + r * 0.35, r * 0.95, r * 0.72, 0, 0, TAU); h.fill();
+  h.lineWidth = r * 0.07; h.strokeStyle = 'rgba(255,226,160,0.5)';
+  for (const s of [-1, 1]) for (const [x, y0, n] of [[1.1, 0.25, 4], [0.9, 0, 5], [0.68, 0.1, 5]]) {
+    for (let k = 0; k < n; k++) {
+      const xx = cx + s * r * (x + (k % 2 ? 0.07 : -0.03) + k * 0.03), yy = cy + r * (y0 + k * 0.27), rr = r * (0.21 - k * 0.012);
+      h.fillStyle = pelo; h.beginPath(); h.arc(xx, yy, rr, 0, TAU); h.fill();
+      h.beginPath(); h.arc(xx, yy, rr * 0.55, s > 0 ? 3.6 : -0.5, s > 0 ? 5.9 : 1.8); h.stroke();   // brillo del rizo
+    }
+  }
   h.fillStyle = '#f4c9a3'; h.beginPath(); h.arc(cx, cy + r * 0.15, r * 0.82, 0, TAU); h.fill();
   h.fillStyle = trajeActual().capa; h.beginPath();
   h.moveTo(cx - r, cy - r * 0.05);
@@ -3367,7 +3455,9 @@ function retrato(cx, cy, r) {
   h.quadraticCurveTo(cx, cy - r * 0.55, cx - r, cy - r * 0.05);
   h.fill();
   h.fillStyle = '#ffd977'; h.beginPath(); h.arc(cx + r * 0.2, cy - r * 2.0, r * 0.14, 0, TAU); h.fill();
-  h.fillStyle = '#c9472b'; h.beginPath(); h.ellipse(cx, cy - r * 0.32, r * 0.6, r * 0.18, 0, 0, TAU); h.fill();
+  const frente = h.createLinearGradient(0, cy - r * 0.5, 0, cy + r * 0.6);          // flequillo con raya al medio
+  frente.addColorStop(0, PELO_RAIZ); frente.addColorStop(1, PELO_PUNTA); h.fillStyle = frente;
+  for (const s of [-1, 1]) { h.beginPath(); h.ellipse(cx + s * r * 0.33, cy - r * 0.3, r * 0.38, r * 0.16, s * 0.3, 0, TAU); h.fill(); }
   h.fillStyle = '#1d1410';
   for (const s of [-1, 1]) { h.beginPath(); h.ellipse(cx + s * r * 0.3, cy + r * 0.12, r * 0.09, r * 0.13, 0, 0, TAU); h.fill(); }
   h.fillStyle = 'rgba(234,143,126,0.8)';

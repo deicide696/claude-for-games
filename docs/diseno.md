@@ -13,7 +13,7 @@
 
 ## Personajes
 
-- **AleUnda (protagonista):** capucha verde puntiaguda con un cascabel dorado, trenzas pelirrojas, torque dorado al cuello y un pequeño caldero en la cadera donde guarda las setas.
+- **AleUnda (protagonista):** capucha verde puntiaguda con un cascabel dorado, pelo largo, suelto y rizado (castaño en la raíz y miel en las puntas, con raya al medio), torque dorado al cuello y un pequeño caldero en la cadera donde guarda las setas.
 - **Lúa (hada compañera):** hadita de luz con alas de libélula y vestido de hoja. Vuela siempre junto a AleUnda e ilumina el camino como un farolillo. Comenta lo que pasa en bocadillos azules (el primer pisotón, el primer trisquel, el último trébol, el amanecer, la meta a la vista…), rescata a AleUnda en las caídas de los primeros niveles y cuenta la historia en las escenas.
 - **Púca (enemigo):** liebre negra de ojos dorados. Patrulla su zona y, si ve a AleUnda, sale a perseguir un momento. Algunos esperan escondidos bajo tierra y salen de golpe. Se vencen pisándolos o con la voltereta.
 - **Fuego fatuo (enemigo):** luz azul que patrulla en línea o en círculo y deja estela. No se puede vencer: hay que esquivarlo.
