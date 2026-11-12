@@ -1,6 +1,6 @@
-# Gnomo y las setas
+# Aleunda · Mundo 1: El Bosque Sagrado
 
-Plataformas 3D por mundos con AleUnda como protagonista. Diseño completo en docs/diseno.md.
+Plataformas 3D por mundos con Aleunda como protagonista. Diseño completo en docs/diseno.md.
 
 ## Restricciones
 - Todo el juego vive en index.html. Sin librerías, sin imágenes ni audio externos.

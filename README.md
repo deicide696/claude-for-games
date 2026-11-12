@@ -1,6 +1,6 @@
-# AleUnda · Mundo 1: El Bosque Sagrado
+# Aleunda · Mundo 1: El Bosque Sagrado
 
-Un juego de plataformas 3D por mundos, al estilo de los clásicos del género, con temática celta. AleUnda recorre el Bosque Sagrado con Lúa, un hada compañera, para devolver la luz a los anillos de hadas que apagó la Banshee.
+Un juego de plataformas 3D por mundos, al estilo de los clásicos del género, con temática celta. Aleunda recorre el Bosque Sagrado con Lúa, un hada compañera, para devolver la luz a los anillos de hadas que apagó la Banshee.
 
 Todo el juego vive en un solo archivo, [`index.html`](index.html): el 3D está hecho a mano con WebGL, la música y los sonidos se sintetizan con Web Audio, y no usa librerías, imágenes ni audio externos.
 
@@ -47,14 +47,14 @@ En la portada, **Enter** empieza o continúa la partida y **N** la borra para em
 
 ## De qué va
 
-La Banshee apagó los anillos de hadas del Bosque Sagrado y hechizó a los púcas, unas liebres negras de ojos dorados. Lúa despierta a AleUnda para recuperar la luz: las setas luminosas y los trisqueles dorados guardan la luz robada. Al final del mundo espera el Gran Púca, el antiguo guardián del bosque, con una corona de espinas en la cabeza.
+La Banshee apagó los anillos de hadas del Bosque Sagrado y hechizó a los púcas, unas liebres negras de ojos dorados. Lúa despierta a Aleunda para recuperar la luz: las setas luminosas y los trisqueles dorados guardan la luz robada. Al final del mundo espera el Gran Púca, el antiguo guardián del bosque, con una corona de espinas en la cabeza.
 
 ## Cómo funciona un nivel
 
 - **La meta** es un menhir alto con un estandarte. Hay que tocarlo antes de que amanezca: hay 300 segundos, o 200 en el nivel secreto. Cuanto más alto lo toques, más puntos (arriba del todo, vida extra), y el tiempo que sobra se suma a los puntos.
-- **Tréboles:** AleUnda aguanta 3 golpes. Algunas runas sueltan un trébol que recupera uno. Con el último trébol, la música se apaga como oída desde lejos y suena un latido.
+- **Tréboles:** Aleunda aguanta 3 golpes. Algunas runas sueltan un trébol que recupera uno. Con el último trébol, la música se apaga como oída desde lejos y suena un latido.
 - **Vidas:** se empieza con 5. Se pierde una al quedarse sin tréboles, al caer al vacío o al agua, o si se acaba el tiempo. Cada 100 setas dan una vida, igual que las bellotas doradas. Sin vidas se vuelve al mapa, pero el progreso queda guardado.
-- **Lúa al rescate:** en el 1-1, en el 1-2 y en el claro secreto, tras una caída, Lúa devuelve a AleUnda al último suelo firme a cambio de un trébol. Solo se pierde la vida si ya no quedaba más que uno.
+- **Lúa al rescate:** en el 1-1, en el 1-2 y en el claro secreto, tras una caída, Lúa devuelve a Aleunda al último suelo firme a cambio de un trébol. Solo se pierde la vida si ya no quedaba más que uno.
 - **Menhir de control:** a mitad de nivel. Al tocarlo se enciende y, si pierdes una vida, vuelves a empezar desde ahí.
 - **Carteles de consejo:** postes de madera que brillan hasta que los lees. Al acercarte muestran una pista. El 1-1 los usa como tutorial.
 
@@ -70,7 +70,7 @@ La Banshee apagó los anillos de hadas del Bosque Sagrado y hechizó a los púca
 
 ## El mapa del mundo
 
-El mapa es una isla flotante con caminos de piedras. Para seguir más allá de un nivel hay que completarlo. Los caminos nuevos aparecen piedra a piedra, y unas flechitas doradas junto a AleUnda señalan los que están abiertos.
+El mapa es una isla flotante con caminos de piedras. Para seguir más allá de un nivel hay que completarlo. Los caminos nuevos aparecen piedra a piedra, y unas flechitas doradas junto a Aleunda señalan los que están abiertos.
 
 - **Elegir ruta:** después del 1-1 el camino se divide. El arroyo (1-2) y las copas (1-3) llevan al dolmen del jefe (1-4): basta con completar uno de los dos.
 - **Pozo de los deseos:** el primer deseo es gratis y los siguientes cuestan 30 setas. Cada deseo da un objeto para la bolsa. Como las setas también dan vidas, gastarlas es una decisión.
@@ -91,20 +91,20 @@ El mapa es una isla flotante con caminos de piedras. Para seguir más allá de u
 | 1-4 | El dolmen del Gran Púca | Camino de menhires bajo la tormenta, púcas emboscados, piedras que se derrumban y la pelea contra el jefe. |
 | 1-S | El anillo de las hadas | Nivel secreto de regalo, tras la puerta de piedra: muchas setas, rebotes encadenados y runas generosas. |
 
-**El jefe:** el Gran Púca salta hacia AleUnda y al caer lanza ondas expansivas que hay que saltar. Después de sus saltos queda mareado: ese es el momento de saltarle a la cabeza. Con tres pisotones se rompe el hechizo y vuelve a ser una liebre blanca y buena.
+**El jefe:** el Gran Púca salta hacia Aleunda y al caer lanza ondas expansivas que hay que saltar. Después de sus saltos queda mareado: ese es el momento de saltarle a la cabeza. Con tres pisotones se rompe el hechizo y vuelve a ser una liebre blanca y buena.
 
 ## Secretos y coleccionables
 
 - **Setas luminosas:** 10 puntos cada una; 100 setas dan una vida.
 - **Trisqueles dorados:** 3 escondidos en cada nivel, 15 en total. Quedan guardados y abren la puerta de piedra.
-- **Caminos de hadas:** losas invisibles que aparecen cuando AleUnda se acerca. Antes se delatan con destellos verdes en el aire. Cada nivel tiene uno que lleva a una zona secreta.
+- **Caminos de hadas:** losas invisibles que aparecen cuando Aleunda se acerca. Antes se delatan con destellos verdes en el aire. Cada nivel tiene uno que lleva a una zona secreta.
 - **Runas escondidas:** bloques invisibles que se atraviesan desde arriba y aparecen al golpearlos desde abajo. Hay una por nivel.
 - **Bellotas de plata:** una al final de cada camino de hadas, 5 en total.
 - **Capuchas:** con 2 bellotas de plata ganas la capucha de otoño, con 4 la de la noche y con las 5 la dorada, que deja chispas. Se cambian con **V** en el mapa.
 
 ## La historia
 
-Lúa vuela siempre junto a AleUnda, ilumina el camino y comenta lo que pasa: el primer pisotón, un trisquel, el último trébol, el amanecer o la meta a la vista. Entre niveles hay escenas cortas con retratos y texto que aparece letra a letra: el prólogo, el camino que se divide, la puerta abierta, la llegada al jefe y el final. Cada escena se ve una sola vez y queda guardada. Al vencer al Gran Púca, la tormenta se convierte en amanecer y queda abierto el camino hacia el Mundo 2, que todavía no existe.
+Lúa vuela siempre junto a Aleunda, ilumina el camino y comenta lo que pasa: el primer pisotón, un trisquel, el último trébol, el amanecer o la meta a la vista. Entre niveles hay escenas cortas con retratos y texto que aparece letra a letra: el prólogo, el camino que se divide, la puerta abierta, la llegada al jefe y el final. Cada escena se ve una sola vez y queda guardada. Al vencer al Gran Púca, la tormenta se convierte en amanecer y queda abierto el camino hacia el Mundo 2, que todavía no existe.
 
 ## Para modificar el juego
 
@@ -117,13 +117,13 @@ El script está dividido en secciones con títulos en mayúsculas:
 | Constantes de ajuste | Todo lo que se puede tocar sin programar (ver más abajo). |
 | Utilidades y matemática 3D | Colores, números aleatorios repetibles y matrices 4x4. |
 | WebGL | Shaders, el constructor de mallas (`Malla`: cajas, cilindros, esferas…) y los sprites que brillan. |
-| Modelos 3D | AleUnda, púcas, Lúa, setas, runas y el resto de modelos, todos hechos con formas básicas. |
+| Modelos 3D | Aleunda, púcas, Lúa, setas, runas y el resto de modelos, todos hechos con formas básicas. |
 | Sonido | Instrumentos sintetizados (arpa, flauta, bajo, tambor, campana), las canciones y los efectos. |
 | Entrada | Teclado y mando. |
 | Progreso guardado | Lo que se guarda en `localStorage` y las capuchas. |
 | Decorado y construcción de niveles | Árboles, menhires, dólmenes… y las funciones `L.*` para montar niveles. |
 | Mundo 1 | La lista `NIVELES` con los cinco niveles. |
-| Física y juego | AleUnda, colisiones, enemigos, jefe, historia de Lúa, interacciones y cámara. |
+| Física y juego | Aleunda, colisiones, enemigos, jefe, historia de Lúa, interacciones y cámara. |
 | Render 3D | Ambientes de cada nivel, luces, sombras y dibujo de la escena. |
 | Mapa del mundo | Nodos, caminos, pozo, bolsa y puerta. |
 | HUD | La interfaz en 2D: paneles, bocadillos, diálogos y retratos. |
@@ -137,7 +137,7 @@ Al principio del script hay grupos de constantes comentadas. Por ejemplo:
 - **Partida:** `VIDAS_INICIALES`, `CORAZONES_MAX`, `SETAS_POR_VIDA`, `RESCATE_EN_CAIDAS`, `PUCAS_TRANQUILOS`.
 - **Mapa:** `TRISQUELES_PUERTA`, `COSTE_DESEO`, `BOLSA_MAX`.
 - **Jefe:** `JEFE_VIDA`, `JEFE_SALTO_TIEMPO`, `JEFE_ATURDIDO`.
-- **Aspecto de AleUnda:** `PELO_RAIZ`, `PELO_PUNTA`, `PELO_LARGO`, `PELO_RIZO` y el balanceo de pelo, capa y capucha (`BALANCEO_*`).
+- **Aspecto de Aleunda:** `PELO_RAIZ`, `PELO_PUNTA`, `PELO_LARGO`, `PELO_RIZO` y el balanceo de pelo, capa y capucha (`BALANCEO_*`).
 - **Cámara y sonido:** `CAMARA_DISTANCIA`, `CAMARA_ALTURA`, `VOLUMEN`, `VOLUMEN_MUSICA`.
 
 ### Crear o cambiar un nivel
@@ -164,7 +164,7 @@ Las coordenadas son: `x` hacia los lados (positivo a la derecha), `y` hacia arri
 
 Algunas piezas disponibles:
 
-- **Suelos y plataformas:** `L.tierra`, `L.piedra`, `L.losa`, `L.columna`, `L.copa`, `L.rama`, `L.repisa`, `L.isla`, `L.movil` (se mueve), `L.cae` (se hunde al pisarla), `L.caminoHadas` (invisible hasta que AleUnda se acerca).
+- **Suelos y plataformas:** `L.tierra`, `L.piedra`, `L.losa`, `L.columna`, `L.copa`, `L.rama`, `L.repisa`, `L.isla`, `L.movil` (se mueve), `L.cae` (se hunde al pisarla), `L.caminoHadas` (invisible hasta que Aleunda se acerca).
 - **Objetos:** `L.seta`, `L.fila`, `L.arco`, `L.anillo`, `L.columnaSetas`, `L.trisquel` (3 por nivel), `L.bellotaPlata`, `L.runa` (con `true` al final queda escondida), `L.muelle`.
 - **Enemigos:** `L.puca` (en modo normal o `'emboscada'`), `L.fatuo` (en círculo o en línea), `L.arena` y `L.jefe`.
 - **Hitos:** `L.inicio`, `L.control`, `L.meta`, `L.cartel`.
@@ -179,7 +179,7 @@ Para que un nivel nuevo aparezca en el mapa, añade su nodo en `NODOS`, su camin
 
 ## Tecnología
 
-- **3D:** WebGL 1 escrito a mano, sin three.js ni otras librerías. Estilo low-poly con sombreado plano, las ocho luces puntuales más cercanas, niebla de distancia y niebla baja, cielo con estrellas y luna, sombras de mancha bajo los personajes y sprites que brillan para luces y partículas. Si el decorado tapa a AleUnda, se ve su silueta a través de él, y lo que roza la cámara se desvanece.
+- **3D:** WebGL 1 escrito a mano, sin three.js ni otras librerías. Estilo low-poly con sombreado plano, las ocho luces puntuales más cercanas, niebla de distancia y niebla baja, cielo con estrellas y luna, sombras de mancha bajo los personajes y sprites que brillan para luces y partículas. Si el decorado tapa a Aleunda, se ve su silueta a través de él, y lo que roza la cámara se desvanece.
 - **Sonido:** Web Audio. Instrumentos sintetizados, un secuenciador para la música de cada nivel y efectos generados en el momento.
 - **Física:** pasos fijos de 120 por segundo, con tiempo de coyote, memoria del botón de salto, salto de altura variable y colisiones contra cajas y cilindros.
 - **Guardado:** `localStorage`, con niveles completados, trisqueles, bellotas de plata, objetos de la bolsa, capucha y escenas vistas.

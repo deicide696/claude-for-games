@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AleUnda · Mundo 1: El Bosque Sagrado</title>
+<title>Aleunda · Mundo 1: El Bosque Sagrado</title>
 <style>
   html, body { margin: 0; height: 100%; background: #05080f; overflow: hidden; }
   canvas { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; display: block; }
@@ -23,24 +23,24 @@
 // --- Pantalla y cámara ---
 const RESOLUCION_MAX = 2;          // tope de píxeles por punto de pantalla (bájalo a 1 si va lento)
 const CAMARA_FOV = 52;             // grados de campo de visión vertical
-const CAMARA_DISTANCIA = 10;       // unidades por detrás de AleUnda
-const CAMARA_ALTURA = 6;           // unidades por encima de AleUnda
-const CAMARA_MIRA_ADELANTE = 4;    // la cámara mira este tanto por delante de AleUnda
-const CAMARA_SEGUIR = 7;           // rapidez con que la cámara sigue a AleUnda en el plano
+const CAMARA_DISTANCIA = 10;       // unidades por detrás de Aleunda
+const CAMARA_ALTURA = 6;           // unidades por encima de Aleunda
+const CAMARA_MIRA_ADELANTE = 4;    // la cámara mira este tanto por delante de Aleunda
+const CAMARA_SEGUIR = 7;           // rapidez con que la cámara sigue a Aleunda en el plano
 const CAMARA_SEGUIR_ALTURA = 3.5;  // rapidez del seguimiento vertical (bajo = no salta con cada salto)
 
-// --- Que el decorado nunca tape a AleUnda ---
+// --- Que el decorado nunca tape a Aleunda ---
 const SILUETA_COLOR = [0.55, 0.95, 0.85]; // color de la silueta que se ve a través de lo que la tapa
 const SILUETA_ALFA = 0.55;         // opacidad de esa silueta (0 = no se ve, 1 = opaca)
-const SILUETA_MARGEN = 0.4;        // lo que esté a menos de esto delante de AleUnda no cuenta (que no asomen los pies por el suelo)
+const SILUETA_MARGEN = 0.4;        // lo que esté a menos de esto delante de Aleunda no cuenta (que no asomen los pies por el suelo)
 const CAMARA_FUNDIDO_CERCA = 5;    // el decorado a menos de esta distancia de la cámara se desvanece (no tapa la pantalla)
 const ROBLE_ALTO = 9;              // tronco de los robles del camino: alto para que la copa quede por encima de la cámara
 const ARENA_CLARO = 8;             // claro sin árboles delante de la arena del jefe (más allá de su borde)
 
-// --- Aspecto de AleUnda: pelo largo, suelto y rizado, con raya al medio ---
+// --- Aspecto de Aleunda: pelo largo, suelto y rizado, con raya al medio ---
 const PELO_RAIZ = '#5e3518';       // color del pelo junto a la cabeza (castaño)
 const PELO_PUNTA = '#e2a650';      // color de las puntas de los rizos (rubio miel)
-const PELO_LARGO = 0.66;           // cuánto bajan los rizos por la espalda desde la capucha (AleUnda mide 1.5)
+const PELO_LARGO = 0.66;           // cuánto bajan los rizos por la espalda desde la capucha (Aleunda mide 1.5)
 const PELO_VOLUMEN = 1;            // lo esponjoso que es el pelo (1 = normal; más = más ancho)
 const PELO_RIZO = 9;               // vueltas de tirabuzón por cada unidad de largo (más = rizo más cerrado)
 const PELO_DETALLE = 6;            // lados del tubo de cada rizo (más = más suave, pero más trabajo)
@@ -50,14 +50,14 @@ const BALANCEO_ARRASTRE = 0.025;   // cuánto se quedan atrás por cada unidad/s
 const BALANCEO_MUELLE = 55;        // rigidez del muelle (más = vuelven antes a su sitio)
 const BALANCEO_FRENO = 7;          // amortiguación (menos = rebotan más al frenar o al aterrizar)
 const BALANCEO_MAX = 0.3;          // lo más que se pueden desplazar las puntas
-const BALANCEO_BRISA = 0.015;      // vaivén suave aunque AleUnda esté quieta
+const BALANCEO_BRISA = 0.015;      // vaivén suave aunque Aleunda esté quieta
 const BALANCEO_CAPA = 0.8;         // la capa se mueve este tanto de lo que se mueve el pelo
 const BALANCEO_CAPUCHA = 0.6;      // y la punta de la capucha, este otro
 const BALANCEO_ALETEO = 0.03;      // ondulación del borde de la capa a toda carrera
 
 // --- Partida ---
 const VIDAS_INICIALES = 5;         // vidas al empezar (y tras un fin de juego)
-const CORAZONES_MAX = 3;           // tréboles de vida: golpes que aguanta AleUnda
+const CORAZONES_MAX = 3;           // tréboles de vida: golpes que aguanta Aleunda
 const SETAS_POR_VIDA = 100;        // cada 100 setas, una vida extra
 const PUNTOS_SETA = 10;
 const PUNTOS_PISOTON = 100;        // se duplica con cada pisotón seguido sin tocar el suelo
@@ -74,10 +74,10 @@ const BOLSA_MAX = 4;               // objetos que caben en la bolsa
 
 // --- Historia y Lúa (el hada compañera) ---
 const LETRAS_POR_SEGUNDO = 45;     // velocidad a la que aparece el texto de los diálogos
-const LUA_DISTANCIA = 0.9;         // a qué distancia vuela Lúa junto a AleUnda
+const LUA_DISTANCIA = 0.9;         // a qué distancia vuela Lúa junto a Aleunda
 const LUA_ALTURA = 2.0;            // y a qué altura
 
-// --- AleUnda: movimiento ---
+// --- Aleunda: movimiento ---
 const VEL_CAMINAR = 6.2;           // unidades/s caminando
 const VEL_CORRER = 9.5;            // unidades/s con Shift
 const ACEL_SUELO = 12;             // easing al arrancar en el suelo (alto = más seco)
@@ -126,7 +126,7 @@ const JEFE_CARRERA = 2.6;          // s que corre en círculos tras recibir un g
 const ONDA_VEL = 8.5;              // velocidad de la onda expansiva al aterrizar
 
 // --- Ambiente ---
-const LUCIERNAGAS = 70;            // luciérnagas alrededor de AleUnda
+const LUCIERNAGAS = 70;            // luciérnagas alrededor de Aleunda
 const RELAMPAGO_CADA = 7;          // s medios entre relámpagos en la tormenta
 
 // --- Sensación de juego ---
@@ -255,7 +255,7 @@ function ajustar() {
 addEventListener('resize', ajustar);
 ajustar();
 if (!gl) {
-  document.body.innerHTML = '<p style="color:#fff;font:20px Georgia,serif;padding:2em">Este navegador no tiene WebGL activado; AleUnda lo necesita para correr.</p>';
+  document.body.innerHTML = '<p style="color:#fff;font:20px Georgia,serif;padding:2em">Este navegador no tiene WebGL activado; Aleunda lo necesita para correr.</p>';
   throw new Error('sin WebGL');
 }
 
@@ -267,7 +267,7 @@ uniform vec4 uBal; uniform vec4 uBalB;
 varying vec3 vPos; varying vec3 vNor; varying vec3 vCol;
 void main() {
   vec3 p = aPos;
-  // pelo, capa y capucha de AleUnda: se doblan más cuanto más lejos de su raíz (altura uBal.w);
+  // pelo, capa y capucha de Aleunda: se doblan más cuanto más lejos de su raíz (altura uBal.w);
   // uBal.xyz es lo que se desplaza la punta, uBalB.x el largo (negativo si crece hacia arriba), uBalB.y el aleteo
   if (uBalB.x != 0.0) {
     float k = clamp((uBal.w - p.y) / uBalB.x, 0.0, 1.0); k *= k;
@@ -563,7 +563,7 @@ function humo(x, y, z, tam, c, a = 1) {
 // =====================================================================
 const MOD = {};
 const IDENT = m4();
-// Pelo de AleUnda: rizos largos y sueltos que salen de debajo de la capucha, con raya al medio.
+// Pelo de Aleunda: rizos largos y sueltos que salen de debajo de la capucha, con raya al medio.
 // Cada rizo es un tirabuzón (un tubo en espiral cerrada) alrededor de un alma más oscura que baja
 // por una curva (raíz → abombado → punta); pasa de castaño en la raíz a miel en las puntas.
 function peloAle(M) {
@@ -607,7 +607,7 @@ function peloAle(M) {
     rizo([s * 0.23, 1.29, 0.12], [s * 0.37, 1.08, 0.12], [s * 0.26, 0.8, 0.17], 0.068, 0.9 + azar() * 0.15);
   }
 }
-// AleUnda: capucha puntiaguda, pelo largo y rizado, torque dorado y su caldero.
+// Aleunda: capucha puntiaguda, pelo largo y rizado, torque dorado y su caldero.
 // Se rehace al cambiar de capucha (los colores salen del traje elegido).
 function crearModeloAle() {
   const t = trajeActual(), T = { capa: hx(t.capa), capaOsc: hx(t.capaOsc), tunica: hx(t.tunica) };
@@ -1163,7 +1163,7 @@ const TRAJES = [
 ];
 function trajeActual() { return TRAJES.find(t => t.id === progreso.traje) || TRAJES[0]; }
 function trajesGanados() { const n = totalPlata(); return TRAJES.filter(t => n >= t.bellotas); }
-// objeto: lo que AleUnda lleva preparado en este nivel (se gasta al volver al mapa)
+// objeto: lo que Aleunda lleva preparado en este nivel (se gasta al volver al mapa)
 const sesion = { vidas: VIDAS_INICIALES, setas: 0, puntos: 0, corazones: CORAZONES_MAX, corazonesMax: CORAZONES_MAX, nivel: 0, control: null, objeto: null };
 function reiniciarSesion() { sesion.vidas = VIDAS_INICIALES; sesion.setas = 0; sesion.puntos = 0; sesion.control = null; sesion.objeto = null; }
 
@@ -1955,7 +1955,7 @@ function alturaSuelo(x, z, y) {
 // ALEUNDA
 // =====================================================================
 const ale = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, estado: 'normal' };
-function reiniciarAleUnda(x, y, z) {
+function reiniciarAleunda(x, y, z) {
   Object.assign(ale, {
     x, y, z, vx: 0, vy: 0, vz: 0, enSuelo: true, suelo: null, coyote: 0, buffer: 0, angulo: Math.PI,
     giro: 0, giroEnfr: 0, giroAire: false, invul: 0.8, estado: 'normal', t: 0, paso: 0, sq: 0, sqV: 0,
@@ -1963,7 +1963,7 @@ function reiniciarAleUnda(x, y, z) {
     seguro: { x, y, z }, saltosExtra: 0,
   });
 }
-function moverAleUnda(dt) {
+function moverAleunda(dt) {
   const a = ale, r = RADIO_ALEUNDA, sol = nivel.solidos, estaba = a.enSuelo;
   a.x += a.vx * dt; a.z += a.vz * dt;
   for (const s of sol) {
@@ -1997,16 +1997,16 @@ function rebotarMuelle(s) {
   sfx('muelle');
   luaDice('¡Wiiiii!', 1.4, 'muelle');
 }
-function actualizarAleUnda(dt, e) {
+function actualizarAleunda(dt, e) {
   const a = ale;
   a.t += dt;
   a.sqV += (-a.sq * 260 - a.sqV * 16) * dt; a.sq += a.sqV * dt;   // muelle del squash & stretch
   if (a.estado === 'muerto') return actualizarMuerte(dt);
   if (a.estado === 'meta') return actualizarMeta(dt);
-  if (a.estado === 'fin') { a.vx *= 0.9; a.vz *= 0.9; a.vy = Math.max(a.vy - GRAVEDAD * dt, -CAIDA_MAX); moverAleUnda(dt); return; }
+  if (a.estado === 'fin') { a.vx *= 0.9; a.vz *= 0.9; a.vy = Math.max(a.vy - GRAVEDAD * dt, -CAIDA_MAX); moverAleunda(dt); return; }
   a.invul = Math.max(0, a.invul - dt);
   a.giro = Math.max(0, a.giro - dt); a.giroEnfr = Math.max(0, a.giroEnfr - dt);
-  // las plataformas móviles arrastran a AleUnda
+  // las plataformas móviles arrastran a Aleunda
   const s = a.suelo;
   if (s && (s.dx || s.dy || s.dz)) { a.x += s.dx; a.y += s.dy; a.z += s.dz; }
   // movimiento con easing
@@ -2043,7 +2043,7 @@ function actualizarAleUnda(dt, e) {
   if (a.giro > 0 && a.vy < 0) g *= 0.35;
   a.vy = Math.max(a.vy - g * dt, -CAIDA_MAX);
   const estaba = a.enSuelo, vyAntes = a.vy;
-  moverAleUnda(dt);
+  moverAleunda(dt);
   if (a.enSuelo) {
     a.ultimoSuelo = a.y; a.giroAire = false; a.combo = 0;
     a.saltosExtra = sesion.objeto === 'pluma' ? 1 : 0;
@@ -2071,7 +2071,7 @@ function actualizarAleUnda(dt, e) {
     else morir(nivel.agua ? 'agua' : 'caida');
   }
 }
-// Suelo firme y lejos del borde: ahí devuelven las hadas a AleUnda si cae
+// Suelo firme y lejos del borde: ahí devuelven las hadas a Aleunda si cae
 function sueloSeguro(s, x, z) {
   if (!s || s.movil || s.cae || s.rebote || s.runa) return false;
   const m = 0.7;
@@ -2153,11 +2153,11 @@ function actualizarMeta(dt) {
     if (a.y <= m.y + 0.001 && a.tMeta > 0.5) { a.faseMeta = 'salta'; a.vy = 8; a.vx = 2.6; a.vz = 1.4; a.angulo = 0.9; a.enSuelo = false; sfx('salto'); }
   } else if (a.faseMeta === 'salta') {
     a.vy = Math.max(a.vy - GRAVEDAD * dt, -CAIDA_MAX);
-    moverAleUnda(dt);
+    moverAleunda(dt);
     if (a.enSuelo || a.tMeta > 3) { a.faseMeta = 'celebra'; a.tMeta = 0; a.vx = a.vz = 0; sfx('meta'); a.sq = 0.3; }
   } else if (a.faseMeta === 'celebra') {
     a.angulo += angDif(a.angulo, 0) * (1 - Math.exp(-6 * dt));
-    a.vy = Math.max(a.vy - GRAVEDAD * dt, -CAIDA_MAX); moverAleUnda(dt);
+    a.vy = Math.max(a.vy - GRAVEDAD * dt, -CAIDA_MAX); moverAleunda(dt);
     if (a.tMeta > 0.9 && nivel.tiempo > 0) {
       a.tic += dt;
       while (a.tic > 0.012 && nivel.tiempo > 0) { a.tic -= 0.012; nivel.tiempo = Math.max(0, nivel.tiempo - 1); sesion.puntos += PUNTOS_POR_SEGUNDO; if (Math.round(nivel.tiempo) % 6 === 0) sfx('tic'); }
@@ -2412,7 +2412,7 @@ function actualizarJefe(dt) {
     const da = Math.hypot(ale.x - o.x, ale.z - o.z);
     if (ale.y < o.y + 0.55 && Math.abs(da - o.r) < 0.45) herir(o.x, o.z);
   }
-  // choque con AleUnda
+  // choque con Aleunda
   if (j.visible && ale.estado === 'normal' && j.estado !== 'derrotado' && j.estado !== 'aparece' && j.estado !== 'liberado') {
     const RJ = 1.7, HJ = 3.0;
     if (d < RJ + RADIO_ALEUNDA && ale.y < j.y + HJ && ale.y + ALTO_ALEUNDA > j.y) {
@@ -2464,10 +2464,10 @@ let finalHablado = false, tPanelFinal = 0;
 // =====================================================================
 // HISTORIA: Lúa, el hada compañera, y las escenas entre niveles
 // =====================================================================
-const NOMBRES = { lua: 'Lúa', ale: 'AleUnda', jefe: 'Gran Púca', liebre: 'Gran Púca' };
+const NOMBRES = { lua: 'Lúa', ale: 'Aleunda', jefe: 'Gran Púca', liebre: 'Gran Púca' };
 const HISTORIA = {
   prologo: [
-    ['lua', '¡AleUnda, despierta! Soy Lúa, el hada de los anillos.'],
+    ['lua', '¡Aleunda, despierta! Soy Lúa, el hada de los anillos.'],
     ['lua', 'Esta noche la Banshee apagó la luz del Bosque Sagrado y hechizó a los púcas.'],
     ['ale', '¿Los anillos de hadas, apagados? ¡Sin su luz el bosque no volverá a despertar!'],
     ['lua', 'Por eso te necesito. Las setas luminosas y los trisqueles dorados guardan la luz que robó.'],
@@ -2497,7 +2497,7 @@ const HISTORIA = {
   ],
   final: [
     ['liebre', '¿Dónde... estoy? Tenía un sueño muy oscuro.'],
-    ['lua', '¡Lo liberaste, AleUnda! Y mira: el primer anillo de hadas vuelve a brillar.'],
+    ['lua', '¡Lo liberaste, Aleunda! Y mira: el primer anillo de hadas vuelve a brillar.'],
     ['liebre', 'Gracias. La Banshee huyó hacia las Colinas de Niebla. Allí hay más anillos apagados.'],
     ['ale', 'Entonces iremos por ellos. ¿Vienes, Lúa?'],
     ['lua', '¡Siempre!'],
@@ -2544,7 +2544,7 @@ function siguienteHistoria() {
   return null;
 }
 
-// --- Lúa vuela junto a AleUnda, deja chispas, ilumina y comenta lo que pasa ---
+// --- Lúa vuela junto a Aleunda, deja chispas, ilumina y comenta lo que pasa ---
 const hada = { x: 0, y: 2, z: 0, t: 0, dice: null, chispa: 0 };
 const luaYa = new Set();   // comentarios que Lúa ya hizo en esta sesión
 function colocarHada(x, y, z) { hada.x = x + LUA_DISTANCIA; hada.y = y + LUA_ALTURA; hada.z = z + 0.6; }
@@ -2657,7 +2657,7 @@ let acum = 0;
 function pasoJuego(dt, e) {
   nivel.t += dt;
   actualizarPlataformas(dt);
-  actualizarAleUnda(dt, ale.estado === 'normal' ? e : NADA);
+  actualizarAleunda(dt, ale.estado === 'normal' ? e : NADA);
   const j = nivel.jefe;
   if (j && j.activo && j.estado !== 'liberado' && ale.estado === 'normal') limitarArena();
   actualizarPucas(dt); actualizarFatuos(dt); actualizarItems(dt);
@@ -2828,7 +2828,7 @@ function poseAle() {
   return p;
 }
 // Inercia del pelo, la capa y la punta de la capucha: un muelle que se queda atrás al arrancar, se pasa
-// de largo al frenar y flota al caer. Se calcula en el mundo con la velocidad de AleUnda (sale de cuánto
+// de largo al frenar y flota al caer. Se calcula en el mundo con la velocidad de Aleunda (sale de cuánto
 // se movió desde el fotograma anterior, así sirve igual en los niveles que en el mapa).
 const balanceo = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, px: null, py: 0, pz: 0, t: 0, rapidez: 0 };
 function moverBalanceo(x, y, z) {
@@ -2849,7 +2849,7 @@ function moverBalanceo(x, y, z) {
     b[k] = clamp(b[k] + b[kv] * dt, -BALANCEO_MAX, BALANCEO_MAX);
   }
 }
-function dibujarAleUnda(x, y, z, ang, pose, silueta = false) {
+function dibujarAleunda(x, y, z, ang, pose, silueta = false) {
   if (pose.oculta) return;
   if (!silueta) moverBalanceo(x, y, z);
   const pinta = silueta ? (ms, m) => dibujar(ms, m, CERO, 1, SILUETA_ALFA, SILUETA_COLOR) : (ms, m) => dibujar(ms, m);
@@ -2868,7 +2868,7 @@ function dibujarAleUnda(x, y, z, ang, pose, silueta = false) {
   if (pose.brazos === 'arriba') { bI = bD = -2.8 + Math.sin(reloj * 8) * 0.15; aI = -0.3; aD = 0.3; }
   const cuerpo = mT(new Float32Array(raiz), 0, bob + 0.44, 0); mRX(cuerpo, incl); mT(cuerpo, 0, -0.44, 0);
   pinta(MOD.aleCuerpo, cuerpo);
-  // pelo, capa y punta de la capucha se doblan con la inercia (pasada al espacio de AleUnda); hacia delante
+  // pelo, capa y punta de la capucha se doblan con la inercia (pasada al espacio de Aleunda); hacia delante
   // casi no se mueven, para que el pelo no se meta en la capa al frenar
   const b = balanceo, ga = ang + (pose.giro || 0), ca = Math.cos(ga), sa = Math.sin(ga);
   const lx = ca * b.x - sa * b.z, lz = Math.min(sa * b.x + ca * b.z, 0.04), aleteo = Math.min(1, b.rapidez / VEL_CORRER) * BALANCEO_ALETEO;
@@ -2880,15 +2880,15 @@ function dibujarAleUnda(x, y, z, ang, pose, silueta = false) {
   for (const [l, g] of [[-1, pI], [1, pD]]) { const m = mT(new Float32Array(raiz), l * 0.12, 0.44 + bob, 0); mRX(m, g); pinta(MOD.alePierna, m); }
   for (const [l, g, ab] of [[-1, bI, aI], [1, bD, aD]]) { const m = mT(new Float32Array(cuerpo), l * 0.27, 0.93, 0); mRX(m, g); mRZ(m, ab); pinta(MOD.aleBrazo, m); }
 }
-// Silueta de AleUnda: se pinta solo donde algo la tapa (prueba de profundidad al revés). Va antes que
+// Silueta de Aleunda: se pinta solo donde algo la tapa (prueba de profundidad al revés). Va antes que
 // ella para que sus piezas no se tapen entre sí, un poco adelantada hacia la cámara para que no asomen
 // los pies por el suelo, y el stencil evita pintar dos veces el mismo píxel.
-function dibujarSiluetaAleUnda(pose) {
+function dibujarSiluetaAleunda(pose) {
   const dx = OJO[0] - ale.x, dy = OJO[1] - ale.y - 0.75, dz = OJO[2] - ale.z, k = SILUETA_MARGEN / (Math.hypot(dx, dy, dz) || 1);
   gl.clear(gl.STENCIL_BUFFER_BIT);
   gl.enable(gl.STENCIL_TEST); gl.stencilFunc(gl.EQUAL, 0, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.INCR);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.depthFunc(gl.GREATER);
-  dibujarAleUnda(ale.x + dx * k, ale.y + dy * k, ale.z + dz * k, ale.angulo, pose, true);
+  dibujarAleunda(ale.x + dx * k, ale.y + dy * k, ale.z + dz * k, ale.angulo, pose, true);
   gl.depthFunc(gl.LESS); gl.depthMask(true); gl.disable(gl.BLEND); gl.disable(gl.STENCIL_TEST);
 }
 function dibujarPuca(p) {
@@ -2935,7 +2935,7 @@ function dibujarJefe() {
 
 // Destello breve y de vez en cuando que delata algo escondido
 function destelloSecreto(x, z) { const v = reloj * 0.8 + x * 0.37 + z * 0.11; return ((v % 2.2) + 2.2) % 2.2 < 0.15; }
-// La capucha dorada deja chispas alrededor de AleUnda
+// La capucha dorada deja chispas alrededor de Aleunda
 function brilloTraje(x, y, z) {
   if (!trajeActual().brilla) return;
   for (let k = 0; k < 3; k++) { const a = reloj * 2.5 + k * TAU / 3; brillo(x + Math.cos(a) * 0.55, y + 1.0 + Math.sin(reloj * 3 + k) * 0.45, z + Math.sin(a) * 0.55, 0.35, C.oroClaro, 0.8); }
@@ -2958,7 +2958,7 @@ function renderNivel() {
     ale.angulo = Math.atan2(OJO[0] - ale.x, OJO[2] - ale.z);
   } else prepararCamara(cam.ojo, cam.obj);
   dibujarCielo(amb);
-  // luces cercanas: las 8 más próximas a AleUnda iluminan la escena (Lúa es su farolillo)
+  // luces cercanas: las 8 más próximas a Aleunda iluminan la escena (Lúa es su farolillo)
   const L = [[hada.x, hada.y, hada.z, 0.45, 0.4, 0.28]];
   for (const f of N.fatuos) L.push([f.pos[0], f.pos[1], f.pos[2], 0.25, 0.55, 1.0]);
   for (const s of N.setas) if (!s.tomada) L.push([s.x, s.y + 0.3, s.z, 0.45, 0.32, 0.1]);
@@ -2989,7 +2989,7 @@ function renderNivel() {
     else { dibujar(MOD.runa, m); dibujar(MOD.runaMarcas, m, UNO, 0.6 + 0.4 * Math.sin(reloj * 3)); brillo(r.x, r.y + 0.5, r.z, 2.2, C.runa, 0.12); }
   }
   for (const p of N.moviles) if (vis(p.cx, p.cz)) dibujar(p.malla, mat(p.cx, p.cy, p.cz));
-  for (const c of N.caminos) {   // caminos de hadas: invisibles hasta que AleUnda se acerca; antes solo dejan destellos
+  for (const c of N.caminos) {   // caminos de hadas: invisibles hasta que Aleunda se acerca; antes solo dejan destellos
     if (c.a > 0.02) dibujar(c.malla, mat(c.x, c.y, c.z, 0, c.a), UNO, 0.45);
     else if (destelloSecreto(c.x, c.z)) brillo(c.x + Math.sin(reloj * 3) * 0.4, c.y + 0.45, c.z, 0.9, C.runaVerde, 0.6);
   }
@@ -3056,7 +3056,7 @@ function renderNivel() {
       brillo(A.x + Math.cos(a) * A.r, A.y + 0.4 + Math.abs(Math.sin(reloj * 5 + k)) * 1.1, A.z + Math.sin(a) * A.r, 1.6, [0.7, 0.4, 1], 0.6);
     }
   }
-  if (ale.estado !== 'muerto' || ale.causa === 'golpe' || ale.causa === 'tiempo') { const p = poseAle(); dibujarSiluetaAleUnda(p); dibujarAleUnda(ale.x, ale.y, ale.z, ale.angulo, p); brilloTraje(ale.x, ale.y, ale.z); }
+  if (ale.estado !== 'muerto' || ale.causa === 'golpe' || ale.causa === 'tiempo') { const p = poseAle(); dibujarSiluetaAleunda(p); dibujarAleunda(ale.x, ale.y, ale.z, ale.angulo, p); brilloTraje(ale.x, ale.y, ale.z); }
   if (ale.estado !== 'muerto') sombraSobreSuelo(ale.x, ale.z, ale.y + 0.1, 0.5);
   dibujarHada();
   dibujarSombras();
@@ -3162,7 +3162,7 @@ function construirMapa() {
     M.caja(mat(px, 0.1, pz, ang, 2.6, 0.1, 1.1), C.madera, hx('#8a6440'));
     for (const s of [-1, 1]) M.caja(mat(px + Math.sin(ang) * s * 0.5, 0.35, pz + Math.cos(ang) * s * 0.5, ang, 2.6, 0.06, 0.06), C.madera);
   }
-  // casa redonda de AleUnda
+  // casa redonda de Aleunda
   M.cilindro(mat(c.x, 0, c.z, 0, 1.5, 1.3, 1.5), C.pared, 12, 1);
   M.cilindro(mat(c.x, 1.2, c.z, 0.2, 2.0, 1.9, 2.0), C.tejado, 12, 0.04, C.tejado, 0.1);
   M.caja(mat(c.x, 0.55, c.z + 1.5, 0, 0.6, 1.1, 0.12), C.madera);
@@ -3232,7 +3232,7 @@ function construirMapa() {
   }
   MAPA.malla = aGPU(M); MAPA.emis = aGPU(E);
 }
-// Coloca a AleUnda en su nodo y deja los caminos ya abiertos a la vista
+// Coloca a Aleunda en su nodo y deja los caminos ya abiertos a la vista
 function reiniciarMapa() {
   const acc = accesibles();
   if (!NODOS[mapa.nodo] || !acc.has(mapa.nodo)) mapa.nodo = '1-1';
@@ -3400,7 +3400,7 @@ function renderMapa() {
   let dMin = 9;
   for (const id in NODOS) dMin = Math.min(dMin, Math.hypot(NODOS[id].x - mapa.x, NODOS[id].z - mapa.z));
   const y = 0.06 + 0.19 * clamp(1.6 - dMin * 1.6, 0, 1);
-  dibujarAleUnda(mapa.x, y, mapa.z, mapa.ang, { paso: mapa.paso, vel: mapa.ruta ? 0.65 : 0, aire: false, sq: 0 });
+  dibujarAleunda(mapa.x, y, mapa.z, mapa.ang, { paso: mapa.paso, vel: mapa.ruta ? 0.65 : 0, aire: false, sq: 0 });
   brilloTraje(mapa.x, y, mapa.z);
   sombraEn(mapa.x, y + 0.02, mapa.z, 0.5, 0.4);
   dibujarHada();
@@ -3670,10 +3670,10 @@ function hudTitulo() {
   trisquel2D(cx - 300, ty, 34, 'rgba(232,179,58,0.85)', reloj * 0.4);
   trisquel2D(cx + 300, ty, 34, 'rgba(232,179,58,0.85)', -reloj * 0.4);
   h.font = `bold 112px ${FUENTE}`; h.textAlign = 'center'; h.textBaseline = 'middle';
-  h.lineWidth = 10; h.strokeStyle = 'rgba(10,20,14,0.85)'; h.strokeText('AleUnda', cx, ty);
+  h.lineWidth = 10; h.strokeStyle = 'rgba(10,20,14,0.85)'; h.strokeText('Aleunda', cx, ty);
   const gg = h.createLinearGradient(0, ty - 50, 0, ty + 50);
   gg.addColorStop(0, '#fff2b8'); gg.addColorStop(0.5, '#ffd25a'); gg.addColorStop(1, '#c98a1e');
-  h.fillStyle = gg; h.fillText('AleUnda', cx, ty);
+  h.fillStyle = gg; h.fillText('Aleunda', cx, ty);
   texto('MUNDO 1  ·  EL BOSQUE SAGRADO', cx, ty + 80, 26, '#cfe8d0');
   if (progreso.mundo) texto('¡Mundo 1 completado!  Trisqueles: ' + totalTrisqueles() + ' / ' + NUM_NIVELES * 3 + '   ·   Bellotas de plata: ' + totalPlata() + ' / ' + NUM_NIVELES, cx, ty + 118, 18, '#ffd977');
   const parp = Math.floor(reloj * 1.6) % 2 === 0;
@@ -3841,7 +3841,7 @@ function hudFinal() {
   h.globalAlpha = 1;
   trisquel2D(cx, VH * 0.12 + 42, 24, '#ffd977', reloj);
   texto('¡MUNDO 1 COMPLETADO!', cx, VH * 0.12 + 92, 40, '#ffe9a8', 'center', 'bold', a);
-  texto('El Bosque Sagrado vuelve a brillar gracias a AleUnda.', cx, VH * 0.12 + 136, 19, '#cfe8d0', 'center', 'normal', a);
+  texto('El Bosque Sagrado vuelve a brillar gracias a Aleunda.', cx, VH * 0.12 + 136, 19, '#cfe8d0', 'center', 'normal', a);
   texto('Pero la Banshee huyó hacia las Colinas de Niebla...  Mundo 2: próximamente.', cx, VH * 0.12 + 164, 17, '#9fb4c8', 'center', 'normal', a);
   texto('Puntos: ' + sesion.puntos + '     Trisqueles: ' + totalTrisqueles() + ' / ' + NUM_NIVELES * 3, cx, VH * 0.12 + 204, 18, '#ffd977', 'center', 'bold', a);
   if (tPanelFinal > 1.5 && Math.floor(reloj * 1.6) % 2 === 0) texto('Pulsa Enter para volver al mapa', cx, VH - 60, 22, '#ffffff');
@@ -3851,7 +3851,7 @@ function hudFin() {
   const cx = VW / 2, cy = VH / 2;
   texto('SIN VIDAS', cx, cy - 40, 54, '#ffb08a');
   retratoLua(cx - 200, cy + 18, 18);
-  texto('«No te rindas, AleUnda. El bosque te espera.»', cx - 172, cy + 18, 20, '#bfe8ff', 'left', 'italic');
+  texto('«No te rindas, Aleunda. El bosque te espera.»', cx - 172, cy + 18, 20, '#bfe8ff', 'left', 'italic');
   if (tEscena > 1.5 && Math.floor(reloj * 1.6) % 2 === 0) texto('Pulsa Enter para volver al mapa (tu progreso sigue guardado)', cx, cy + 80, 18, '#ffffff', 'center', 'normal');
 }
 
@@ -3903,7 +3903,7 @@ function empezarNivel(i, desdeControl) {
   let { x, y, z } = nivel.inicio;
   const c = sesion.control != null ? nivel.controles[sesion.control] : null;
   if (c) { c.activo = true; c.brillo = 1; x = c.sx; y = c.y; z = c.sz; }
-  reiniciarAleUnda(x, y, z);
+  reiniciarAleunda(x, y, z);
   colocarHada(x, y, z); hada.dice = null; dialogo = null;
   peligroActivo = false; peligroMusica(false); tSilencio = 0;
   actualizarCamara(0);
