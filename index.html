@@ -29,6 +29,14 @@ const CAMARA_MIRA_ADELANTE = 4;    // la cámara mira este tanto por delante de 
 const CAMARA_SEGUIR = 7;           // rapidez con que la cámara sigue a AleUnda en el plano
 const CAMARA_SEGUIR_ALTURA = 3.5;  // rapidez del seguimiento vertical (bajo = no salta con cada salto)
 
+// --- Que el decorado nunca tape a AleUnda ---
+const SILUETA_COLOR = [0.55, 0.95, 0.85]; // color de la silueta que se ve a través de lo que la tapa
+const SILUETA_ALFA = 0.55;         // opacidad de esa silueta (0 = no se ve, 1 = opaca)
+const SILUETA_MARGEN = 0.4;        // lo que esté a menos de esto delante de AleUnda no cuenta (que no asomen los pies por el suelo)
+const CAMARA_FUNDIDO_CERCA = 5;    // el decorado a menos de esta distancia de la cámara se desvanece (no tapa la pantalla)
+const ROBLE_ALTO = 9;              // tronco de los robles del camino: alto para que la copa quede por encima de la cámara
+const ARENA_CLARO = 8;             // claro sin árboles delante de la arena del jefe (más allá de su borde)
+
 // --- Partida ---
 const VIDAS_INICIALES = 5;         // vidas al empezar (y tras un fin de juego)
 const CORAZONES_MAX = 3;           // tréboles de vida: golpes que aguanta AleUnda
@@ -214,7 +222,7 @@ function xfN(n, x, y, z) { return norm3([n[0] * x + n[3] * y + n[6] * z, n[1] * 
 // WEBGL: lienzos, shaders y mallas
 // =====================================================================
 const lienzo = document.getElementById('gl');
-const gl = lienzo.getContext('webgl', { antialias: true, alpha: false });
+const gl = lienzo.getContext('webgl', { antialias: true, alpha: false, stencil: true });
 const hudL = document.getElementById('hud');
 const h = hudL.getContext('2d');
 let W = 1, H = 1, DPR = 1, UI = 1, VW = 1, VH = 1;
@@ -252,7 +260,12 @@ uniform vec3 uNiebla; uniform float uNieblaDens; uniform float uNieblaBaja;
 uniform vec3 uTinte; uniform float uEmis; uniform float uAlfa; uniform vec3 uFlash;
 uniform float uOnda; uniform float uTiempo;
 uniform vec3 uLP[8]; uniform vec3 uLC[8];
+uniform float uCerca;
+float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
 void main() {
+  // lo que roza la cámara se desvanece con un tramado (así nunca llena la pantalla)
+  float dCam = length(uCam - vPos);
+  if (dCam < uCerca && bayer2(gl_FragCoord.xy * 0.5) * 0.25 + bayer2(gl_FragCoord.xy) >= smoothstep(uCerca * 0.35, uCerca, dCam)) discard;
   vec3 n = normalize(vNor);
   if (!gl_FrontFacing) n = -n;
   vec3 base = vCol * uTinte;
@@ -1344,20 +1357,22 @@ function constructorDe(N) {
   };
   L.roble = (x, d, y = 0, esc = 1) => {
     const z = Z(d);
-    arbolEn(D, x, z, y, y + 4.5 * esc, esc);
-    cilSolido(N, x, z, 0.55 * esc * 1.1, y, y + 4.5 * esc);
+    arbolEn(D, x, z, y, y + ROBLE_ALTO, esc);
+    cilSolido(N, x, z, 0.55 * esc * 1.1, y, y + ROBLE_ALTO);
   };
   // Bosque a ambos lados del camino: robles altísimos que nacen de la niebla
   L.bosque = (d0, d1, op = {}) => {
-    const dentro = op.dentro ?? 9, fuera = op.fuera ?? 15, yC = op.y ?? 0;
+    const dentro = op.dentro ?? 9, fuera = op.fuera ?? 15, yC = op.y ?? 0, A = N.arena;
+    // delante de la arena del jefe no crecen árboles: taparían la pelea (se descartan sin mover los demás)
+    const donde = (x, z) => A && z > A.z && Math.hypot(x - A.x, z - A.z) < A.r + ARENA_CLARO ? new Malla() : D;
     for (const lado of [-1, 1]) {
       for (let d = d0; d < d1; d += rnd(3.5, 6)) {
         const x = lado * rnd(dentro, fuera), z = Z(d + rnd(-1.5, 1.5)), esc = rnd(1.0, 1.6);
-        if (libre(x, z, 2.6 * esc)) arbolEn(D, x, z, -30, yC + rnd(3.5, 8), esc);
+        if (libre(x, z, 2.6 * esc)) arbolEn(donde(x, z), x, z, -30, yC + rnd(3.5, 8), esc);
       }
       for (let d = d0; d < d1; d += rnd(6, 10)) {
         const x = lado * rnd(fuera + 3, fuera + 12), z = Z(d), esc = rnd(1.6, 2.4);
-        if (libre(x, z, 2.6 * esc)) arbolEn(D, x, z, -30, yC + rnd(6, 12), esc);
+        if (libre(x, z, 2.6 * esc)) arbolEn(donde(x, z), x, z, -30, yC + rnd(6, 12), esc);
       }
     }
   };
@@ -2648,7 +2663,7 @@ function prepararPrincipal(amb) {
   gl.uniform3fv(u.uAmbArriba, [amb.ambArriba[0] + rr * 0.3, amb.ambArriba[1] + rr * 0.25, amb.ambArriba[2] + rr * 0.4]);
   gl.uniform3fv(u.uAmbAbajo, amb.ambAbajo);
   gl.uniform3fv(u.uNiebla, amb.niebla); gl.uniform1f(u.uNieblaDens, amb.dens); gl.uniform1f(u.uNieblaBaja, amb.baja);
-  gl.uniform1f(u.uOnda, 0); gl.uniform1f(u.uTiempo, reloj);
+  gl.uniform1f(u.uOnda, 0); gl.uniform1f(u.uTiempo, reloj); gl.uniform1f(u.uCerca, CAMARA_FUNDIDO_CERCA);
   gl.uniform3fv(u.uLP, lucesP); gl.uniform3fv(u.uLC, lucesC);
 }
 const sombras = [];
@@ -2712,8 +2727,9 @@ function poseAle() {
   if (a.estado === 'fin') { p.brazos = 'arriba'; p.vel = 0; p.aire = false; }
   return p;
 }
-function dibujarAleUnda(x, y, z, ang, pose) {
+function dibujarAleUnda(x, y, z, ang, pose, silueta = false) {
   if (pose.oculta) return;
+  const pinta = silueta ? (ms, m) => dibujar(ms, m, CERO, 1, SILUETA_ALFA, SILUETA_COLOR) : (ms, m) => dibujar(ms, m);
   const sq = pose.sq || 0;
   const raiz = mat(x, y, z, ang + (pose.giro || 0), 1 + sq * 0.5, 1 - sq, 1 + sq * 0.5);
   const v = pose.vel || 0, s = Math.sin(pose.paso || 0);
@@ -2728,9 +2744,20 @@ function dibujarAleUnda(x, y, z, ang, pose) {
   } else { bob = Math.sin(reloj * 2.2) * 0.012; bI = Math.sin(reloj * 2.2) * 0.05; bD = -bI; }
   if (pose.brazos === 'arriba') { bI = bD = -2.8 + Math.sin(reloj * 8) * 0.15; aI = -0.3; aD = 0.3; }
   const cuerpo = mT(new Float32Array(raiz), 0, bob + 0.44, 0); mRX(cuerpo, incl); mT(cuerpo, 0, -0.44, 0);
-  dibujar(MOD.aleCuerpo, cuerpo);
-  for (const [l, g] of [[-1, pI], [1, pD]]) { const m = mT(new Float32Array(raiz), l * 0.12, 0.44 + bob, 0); mRX(m, g); dibujar(MOD.alePierna, m); }
-  for (const [l, g, ab] of [[-1, bI, aI], [1, bD, aD]]) { const m = mT(new Float32Array(cuerpo), l * 0.27, 0.93, 0); mRX(m, g); mRZ(m, ab); dibujar(MOD.aleBrazo, m); }
+  pinta(MOD.aleCuerpo, cuerpo);
+  for (const [l, g] of [[-1, pI], [1, pD]]) { const m = mT(new Float32Array(raiz), l * 0.12, 0.44 + bob, 0); mRX(m, g); pinta(MOD.alePierna, m); }
+  for (const [l, g, ab] of [[-1, bI, aI], [1, bD, aD]]) { const m = mT(new Float32Array(cuerpo), l * 0.27, 0.93, 0); mRX(m, g); mRZ(m, ab); pinta(MOD.aleBrazo, m); }
+}
+// Silueta de AleUnda: se pinta solo donde algo la tapa (prueba de profundidad al revés). Va antes que
+// ella para que sus piezas no se tapen entre sí, un poco adelantada hacia la cámara para que no asomen
+// los pies por el suelo, y el stencil evita pintar dos veces el mismo píxel.
+function dibujarSiluetaAleUnda(pose) {
+  const dx = OJO[0] - ale.x, dy = OJO[1] - ale.y - 0.75, dz = OJO[2] - ale.z, k = SILUETA_MARGEN / (Math.hypot(dx, dy, dz) || 1);
+  gl.clear(gl.STENCIL_BUFFER_BIT);
+  gl.enable(gl.STENCIL_TEST); gl.stencilFunc(gl.EQUAL, 0, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.INCR);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.depthFunc(gl.GREATER);
+  dibujarAleUnda(ale.x + dx * k, ale.y + dy * k, ale.z + dz * k, ale.angulo, pose, true);
+  gl.depthFunc(gl.LESS); gl.depthMask(true); gl.disable(gl.BLEND); gl.disable(gl.STENCIL_TEST);
 }
 function dibujarPuca(p) {
   if (!p.vivo) return;
@@ -2897,7 +2924,7 @@ function renderNivel() {
       brillo(A.x + Math.cos(a) * A.r, A.y + 0.4 + Math.abs(Math.sin(reloj * 5 + k)) * 1.1, A.z + Math.sin(a) * A.r, 1.6, [0.7, 0.4, 1], 0.6);
     }
   }
-  if (ale.estado !== 'muerto' || ale.causa === 'golpe' || ale.causa === 'tiempo') { dibujarAleUnda(ale.x, ale.y, ale.z, ale.angulo, poseAle()); brilloTraje(ale.x, ale.y, ale.z); }
+  if (ale.estado !== 'muerto' || ale.causa === 'golpe' || ale.causa === 'tiempo') { const p = poseAle(); dibujarSiluetaAleUnda(p); dibujarAleUnda(ale.x, ale.y, ale.z, ale.angulo, p); brilloTraje(ale.x, ale.y, ale.z); }
   if (ale.estado !== 'muerto') sombraSobreSuelo(ale.x, ale.z, ale.y + 0.1, 0.5);
   dibujarHada();
   dibujarSombras();
