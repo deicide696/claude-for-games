@@ -138,6 +138,14 @@ const PAUSA_PISOTON = 0.05;        // s de congelado al pisar (hit-stop)
 const VOLUMEN = 0.55;              // volumen general (0 a 1)
 const VOLUMEN_MUSICA = 0.32;       // volumen de la música respecto al general
 
+// --- Intro (la escena que abre el juego) ---
+const APERTURA_FRASE = 3.4;        // s que dura en pantalla cada frase de la historia
+const APERTURA_LOGO = 3.2;         // s del estallido del título antes de pasar a la pantalla de inicio
+const APERTURA_ALTURA = 40;        // altura desde la que baja la cámara (empieza mirando la luna)
+const APERTURA_LEJOS = 2.4;        // la cámara empieza este tanto más lejos que en la pantalla de título
+const APERTURA_BANDAS = 0.12;      // alto de las bandas negras de cine (fracción de la pantalla)
+const SPLASH_RADIO = 120;          // radio del anillo dorado que se dibuja alrededor de la luna al abrir el juego
+
 // =====================================================================
 // UTILIDADES
 // =====================================================================
@@ -1047,7 +1055,19 @@ function sfx(n, extra) {
     case 'impacto': osc('sine', 90, 30, t, 0.5, 0.5); ruido(t, 0.4, 0.4, 'lowpass', 800, 100); break;
     case 'jefeGolpe': osc('square', 700, 100, t, 0.3, 0.08); osc('sawtooth', 220, 60, t + 0.05, 0.5, 0.09); break;
     case 'trueno': ruido(t, 2.4, 0.5, 'lowpass', 420, 60); ruido(t, 0.35, 0.25, 'lowpass', 1600, 200); break;
-    case 'buho': [[0, 430], [0.38, 380], [0.6, 380]].forEach(([d, f]) => osc('sine', f, f * 0.94, t + d, 0.3, 0.05, salidaFx, 0.06)); break;
+    case 'apertura':   // bordón grave que crece mientras la cámara baja de las estrellas
+      osc('sine', FQ('D2'), 0, t, 9, 0.22, salidaFx, 2.5); osc('triangle', FQ('A2'), 0, t + 1, 8, 0.07, salidaFx, 3);
+      instrumento('campana', FQ('D6'), t + 0.3, 1, 0.6, salidaFx); break;
+    case 'frase': {   // un acorde de arpa por frase: Re menor, Do, Si bemol, La… y el título resuelve en Re mayor
+      const A = [['D4', 'A4', 'D5', 'F5'], ['C4', 'G4', 'C5', 'E5'], ['Bb3', 'F4', 'Bb4', 'D5'], ['A3', 'E4', 'A4', 'C#5']][(extra || 0) % 4];
+      A.forEach((x, i) => instrumento('arpa', FQ(x), t + i * 0.11, 1, 0.9, salidaFx));
+      osc('sine', FQ(A[0]) / 2, 0, t, 3, 0.12, salidaFx, 0.4); break; }
+    case 'logo':   // golpe de bodhrán, glissando de arpa y campanas
+      osc('sine', 110, 32, t, 0.8, 0.6); ruido(t, 0.5, 0.45, 'lowpass', 900, 80); osc('sine', 82, 30, t + 0.28, 0.6, 0.35);
+      ['D4', 'E4', 'F#4', 'A4', 'B4', 'D5', 'E5', 'F#5', 'A5', 'B5', 'D6', 'F#6'].forEach((x, i) => instrumento('arpa', FQ(x), t + 0.05 + i * 0.04, 1, 0.7, salidaFx));
+      ['D6', 'A6', 'D7'].forEach((x, i) => instrumento('campana', FQ(x), t + 0.6 + i * 0.15, 1, 0.9, salidaFx));
+      ruido(t, 0.9, 0.08, 'highpass', 5000); break;
+    case 'buho':[[0, 430], [0.38, 380], [0.6, 380]].forEach(([d, f]) => osc('sine', f, f * 0.94, t + d, 0.3, 0.05, salidaFx, 0.06)); break;
     case 'puerta': ruido(t, 1.2, 0.3, 'lowpass', 200, 600); osc('sawtooth', 50, 70, t, 1.2, 0.05); break;
     case 'finJuego': [['C5', 0], ['G4', 0.3], ['E4', 0.6], ['A4', 0.9], ['B4', 1.1], ['A4', 1.3], ['G#4', 1.5], ['A#4', 1.7], ['G#4', 1.9], ['G4', 2.1]]
       .forEach(([x, d]) => instrumento('flauta', FQ(x), t + d, 0.28, 1.2, salidaFx)); break;
@@ -3356,6 +3376,16 @@ function renderMapa() {
   ambActual = amb;
   let ojo, obj;
   if (escena === 'titulo') { const a = reloj * 0.07; ojo = [Math.sin(a) * 28, 15, Math.cos(a) * 26]; obj = [0, -1.5, 0]; }
+  else if (escena === 'apertura') {
+    // baja en espiral desde el cielo mirando la luna y acaba justo en la toma del título
+    const k = apertura.fase === 'espera' ? 0 : apertura.fase === 'vuelo' ? clamp(apertura.t / (FRASES_APERTURA.length * APERTURA_FRASE), 0, 1) : 1;
+    const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    const aFin = reloj * 0.07, aIni = aFin + angDif(aFin, Math.atan2(-amb.luna[0], -amb.luna[2]));
+    const a = lerp(aIni, aFin, e), r = lerp(APERTURA_LEJOS, 1, e);
+    ojo = [Math.sin(a) * 28 * r, lerp(APERTURA_ALTURA, 15, e), Math.cos(a) * 26 * r];
+    let inc = clamp((k - 0.2) / 0.6, 0, 1); inc = inc * inc * (3 - 2 * inc);
+    obj = [0, 1, 2].map(i => lerp(ojo[i] + amb.luna[i] * 60, i === 1 ? -1.5 : 0, inc));
+  }
   else { ojo = [mapa.camX * 0.75, 13.5, mapa.camZ + 13]; obj = [mapa.camX * 0.75, 0, mapa.camZ - 1.5]; }
   prepararCamara(ojo, obj);
   dibujarCielo(amb);
@@ -3447,13 +3477,15 @@ function panel(x, y, w, hh, a = 0.55) {
   h.lineWidth = 2; h.strokeStyle = 'rgba(232,179,58,0.8)'; h.stroke();
   rectRedondo(x + 5, y + 5, w - 10, hh - 10, 8); h.lineWidth = 1; h.strokeStyle = 'rgba(232,179,58,0.28)'; h.stroke();
 }
-function trisquel2D(cx, cy, r, col, rot = 0) {
+// trazo: cuánto de cada espiral se dibuja (0 a 1), para que el trisquel pueda «dibujarse» solo
+function trisquel2D(cx, cy, r, col, rot = 0, trazo = 1) {
+  const n = Math.round(30 * trazo); if (n < 1) return;
   h.save(); h.translate(cx, cy); h.rotate(rot);
   h.strokeStyle = col; h.lineWidth = Math.max(1.5, r * 0.17); h.lineCap = 'round';
   for (let k = 0; k < 3; k++) {
     const a0 = k * TAU / 3, ccx = Math.cos(a0) * r * 0.5, ccy = Math.sin(a0) * r * 0.5;
     h.beginPath();
-    for (let i = 0; i <= 30; i++) {
+    for (let i = 0; i <= n; i++) {
       const t = i / 30, an = a0 + Math.PI + t * 2.6 * Math.PI, rr = r * 0.5 * (1 - t * 0.85);
       const x = ccx + Math.cos(an) * rr, y = ccy + Math.sin(an) * rr;
       if (i) h.lineTo(x, y); else h.moveTo(x, y);
@@ -3662,30 +3694,145 @@ function hudIntro() {
   }
   if (def.consejo) texto(def.consejo, cx, VH - 70, 18, '#9fb4c8', 'center', 'normal');
 }
-function hudTitulo() {
-  const cx = VW / 2, ty = VH * 0.26;
+// kLogo: entrada del título (0 → 1) · kResto: aparición del resto de la pantalla. La intro los anima; luego valen 1.
+function hudTitulo(kLogo = 1, kResto = 1) {
+  const cx = VW / 2, ty = VH * 0.26, eL = 1 - Math.pow(1 - kLogo, 3);
   const g = h.createLinearGradient(0, 0, 0, VH);
   g.addColorStop(0, 'rgba(2,4,10,0.7)'); g.addColorStop(0.45, 'rgba(2,4,10,0.05)'); g.addColorStop(1, 'rgba(2,4,10,0.65)');
   h.fillStyle = g; h.fillRect(0, 0, VW, VH);
-  trisquel2D(cx - 300, ty, 34, 'rgba(232,179,58,0.85)', reloj * 0.4);
-  trisquel2D(cx + 300, ty, 34, 'rgba(232,179,58,0.85)', -reloj * 0.4);
+  h.globalAlpha = eL;   // los trisqueles llegan girando desde los lados
+  trisquel2D(cx - 300 - (1 - eL) * 500, ty, 34, 'rgba(232,179,58,0.85)', reloj * 0.4 + (1 - eL) * 8);
+  trisquel2D(cx + 300 + (1 - eL) * 500, ty, 34, 'rgba(232,179,58,0.85)', -reloj * 0.4 - (1 - eL) * 8);
+  h.save(); h.translate(cx, ty); const s = lerp(1.6, 1, eL); h.scale(s, s);
   h.font = `bold 112px ${FUENTE}`; h.textAlign = 'center'; h.textBaseline = 'middle';
-  h.lineWidth = 10; h.strokeStyle = 'rgba(10,20,14,0.85)'; h.strokeText('Aleunda', cx, ty);
-  const gg = h.createLinearGradient(0, ty - 50, 0, ty + 50);
+  h.shadowColor = 'rgba(255,200,80,0.8)'; h.shadowBlur = 14 + 40 * (1 - kLogo) + 6 * Math.sin(reloj * 2);
+  h.lineWidth = 10; h.strokeStyle = 'rgba(10,20,14,0.85)'; h.strokeText('Aleunda', 0, 0);
+  h.shadowBlur = 0;
+  const gg = h.createLinearGradient(0, -50, 0, 50);
   gg.addColorStop(0, '#fff2b8'); gg.addColorStop(0.5, '#ffd25a'); gg.addColorStop(1, '#c98a1e');
-  h.fillStyle = gg; h.fillText('Aleunda', cx, ty);
-  texto('MUNDO 1  ·  EL BOSQUE SAGRADO', cx, ty + 80, 26, '#cfe8d0');
-  if (progreso.mundo) texto('¡Mundo 1 completado!  Trisqueles: ' + totalTrisqueles() + ' / ' + NUM_NIVELES * 3 + '   ·   Bellotas de plata: ' + totalPlata() + ' / ' + NUM_NIVELES, cx, ty + 118, 18, '#ffd977');
+  h.fillStyle = gg; h.fillText('Aleunda', 0, 0);
+  // destello de luz que recorre las letras (al aparecer y luego cada pocos segundos)
+  const p = kLogo < 1 ? kLogo * 1.4 - 0.2 : ((reloj * 0.22) % 1.6) - 0.3;
+  if (p > -0.2 && p < 1.2) {
+    const gb = h.createLinearGradient(-260, -40, 260, 40), q = clamp(p, 0, 1);
+    gb.addColorStop(clamp(q - 0.12, 0, 1), 'rgba(255,255,255,0)'); gb.addColorStop(q, 'rgba(255,255,240,0.95)'); gb.addColorStop(clamp(q + 0.12, 0, 1), 'rgba(255,255,255,0)');
+    h.fillStyle = gb; h.fillText('Aleunda', 0, 0);
+  }
+  h.restore(); h.globalAlpha = 1;
+  texto('MUNDO 1  ·  EL BOSQUE SAGRADO', cx, ty + 80 + (1 - kResto) * 14, 26, '#cfe8d0', 'center', 'bold', kResto);
+  if (progreso.mundo) texto('¡Mundo 1 completado!  Trisqueles: ' + totalTrisqueles() + ' / ' + NUM_NIVELES * 3 + '   ·   Bellotas de plata: ' + totalPlata() + ' / ' + NUM_NIVELES, cx, ty + 118, 18, '#ffd977', 'center', 'bold', kResto);
   const parp = Math.floor(reloj * 1.6) % 2 === 0;
   if (hayProgreso()) {
-    if (parp) texto('Pulsa Enter para continuar', cx, VH * 0.6, 26, '#ffffff');
-    texto('N: empezar de cero (borra el progreso)', cx, VH * 0.6 + 36, 15, '#9fb4c8', 'center', 'normal');
-  } else if (parp) texto('Pulsa Enter para empezar', cx, VH * 0.6, 26, '#ffffff');
-  panel(cx - 370, VH - 156, 740, 132, 0.62);
-  texto('Flechas / WASD: moverse     Espacio: saltar (mantenlo para llegar más alto)', cx, VH - 130, 14, '#e8eefc', 'center', 'normal');
-  texto('Mantén Shift: correr     J / X: voltereta     P / Esc: pausa', cx, VH - 104, 14, '#e8eefc', 'center', 'normal');
-  texto('Pisa a los púcas  ·  esquiva los fuegos fatuos  ·  toca el menhir de la meta', cx, VH - 74, 14, '#c9b98a', 'center', 'normal');
-  texto('Con mando: A saltar  ·  X voltereta  ·  RB correr', cx, VH - 46, 12, '#8fa0c0', 'center', 'normal');
+    if (parp) texto('Pulsa Enter para continuar', cx, VH * 0.6, 26, '#ffffff', 'center', 'bold', kResto);
+    texto('N: empezar de cero (borra el progreso)', cx, VH * 0.6 + 36, 15, '#9fb4c8', 'center', 'normal', kResto);
+  } else if (parp) texto('Pulsa Enter para empezar', cx, VH * 0.6, 26, '#ffffff', 'center', 'bold', kResto);
+  h.globalAlpha = kResto; panel(cx - 370, VH - 156, 740, 132, 0.62); h.globalAlpha = 1;
+  texto('Flechas / WASD: moverse     Espacio: saltar (mantenlo para llegar más alto)', cx, VH - 130, 14, '#e8eefc', 'center', 'normal', kResto);
+  texto('Mantén Shift: correr     J / X: voltereta     P / Esc: pausa', cx, VH - 104, 14, '#e8eefc', 'center', 'normal', kResto);
+  texto('Pisa a los púcas  ·  esquiva los fuegos fatuos  ·  toca el menhir de la meta', cx, VH - 74, 14, '#c9b98a', 'center', 'normal', kResto);
+  texto('Con mando: A saltar  ·  X voltereta  ·  RB correr', cx, VH - 46, 12, '#8fa0c0', 'center', 'normal', kResto);
+}
+// La historia que cuenta Lúa mientras la cámara baja de las estrellas al bosque
+const FRASES_APERTURA = [
+  'Hace mucho tiempo, el Bosque Sagrado brillaba con la luz de mil hadas.',
+  'Pero una noche llegó la Banshee, y con su lamento hechizó a los púcas.',
+  'Los anillos de hadas se apagaron, uno a uno…',
+  'Solo una niña de capucha verde se atrevió a cruzar la oscuridad.',
+];
+// Sello del splash: un anillo con marcas ogham se dibuja alrededor de la luna, brotan tres trisqueles
+// y las luciérnagas acuden en espiral. t: segundos desde que empezó · s: salida (0 → 1, se abre y se desvanece)
+function selloSplash(t, s) {
+  const cx = VW / 2, cy = VH / 2, R = SPLASH_RADIO * (1 + s * 0.7), al = 1 - s;
+  if (al <= 0) return;
+  const ease = x => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+  h.save(); h.globalAlpha = al;
+  const kh = ease(t / 2.5);   // halo cálido alrededor de la luna
+  const g = h.createRadialGradient(cx, cy, R * 0.3, cx, cy, R * 1.7);
+  g.addColorStop(0, `rgba(255,215,130,${0.12 * kh})`); g.addColorStop(0.6, `rgba(255,200,90,${0.05 * kh})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  h.fillStyle = g; h.fillRect(cx - R * 2, cy - R * 2, R * 4, R * 4);
+  const ka = ease((t - 0.3) / 1.9), rot = reloj * 0.05;
+  h.lineCap = 'round'; h.shadowColor = 'rgba(255,200,90,0.9)'; h.shadowBlur = 12;
+  h.strokeStyle = 'rgba(240,195,90,0.9)'; h.lineWidth = 2.5;
+  h.beginPath(); h.arc(cx, cy, R, -Math.PI / 2 + rot, -Math.PI / 2 + rot + TAU * ka); h.stroke();
+  h.strokeStyle = 'rgba(240,195,90,0.5)'; h.lineWidth = 1.2;
+  h.beginPath(); h.arc(cx, cy, R * 0.88, Math.PI / 2 - rot, Math.PI / 2 - rot - TAU * ka, true); h.stroke();
+  for (let k = 0; k < 36; k++) {   // marcas ogham por fuera del anillo, al paso del trazo
+    const vis = clamp(ka * 36 - k, 0, 1); if (vis <= 0) continue;
+    const a = -Math.PI / 2 + rot + k / 36 * TAU, l = R * (k % 3 === 0 ? 0.13 : 0.06);
+    h.globalAlpha = al * vis; h.lineWidth = 1.6; h.strokeStyle = 'rgba(240,195,90,0.85)';
+    h.beginPath(); h.moveTo(cx + Math.cos(a) * R * 1.04, cy + Math.sin(a) * R * 1.04); h.lineTo(cx + Math.cos(a) * (R * 1.04 + l), cy + Math.sin(a) * (R * 1.04 + l)); h.stroke();
+  }
+  h.globalAlpha = al;
+  const kt = ease((t - 1.4) / 1.6);   // tres trisqueles brotan sobre el anillo
+  for (let j = 0; j < 3 && kt > 0; j++) {
+    const a = -Math.PI / 2 + j * TAU / 3 + rot, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
+    h.shadowBlur = 0; h.fillStyle = 'rgba(4,7,16,0.9)'; h.beginPath(); h.arc(x, y, 17 * kt, 0, TAU); h.fill();
+    h.shadowBlur = 14; trisquel2D(x, y, 20, 'rgba(255,214,110,0.95)', reloj * 0.5 * (j % 2 ? -1 : 1), kt);
+  }
+  h.shadowBlur = 0; h.globalCompositeOperation = 'lighter';
+  for (let k = 0; k < 54; k++) {   // luciérnagas que llegan en espiral y se quedan orbitando
+    const ret = (k % 9) * 0.12, p = ease((t - 0.2 - ret) / 2.8);
+    const d = lerp(Math.max(VW, VH) * 0.7, R * (0.6 + (k % 8) * 0.12), p);
+    const ang = k * 2.39996 + p * 2.5 + reloj * (0.12 + (k % 4) * 0.05) * (k % 2 ? 1 : -1);
+    const a = clamp(t * 1.2 - ret, 0, 1) * (0.55 + 0.45 * Math.sin(reloj * 3 + k)) * al;
+    const x = cx + Math.cos(ang) * d, y = cy + Math.sin(ang) * d * 0.9, r = 1.4 + (k % 3) * 0.8;
+    const col = k % 4 ? '255,205,100' : '160,230,255';
+    h.globalAlpha = 1; h.fillStyle = `rgba(${col},${a * 0.22})`; h.beginPath(); h.arc(x, y, r * 3.5, 0, TAU); h.fill();
+    h.fillStyle = `rgba(${col},${a})`; h.beginPath(); h.arc(x, y, r, 0, TAU); h.fill();
+  }
+  h.restore();
+}
+function hudApertura() {
+  const A = apertura, cx = VW / 2;
+  const t = A.t, bandaMax = VH * APERTURA_BANDAS;
+  // motas de luz que flotan delante de la cámara
+  h.save(); h.globalCompositeOperation = 'lighter';
+  for (let k = 0; k < 40; k++) {
+    const sx = (k * 0.618034 + reloj * (0.004 + (k % 5) * 0.002)) % 1, sy = (k * 0.41421 + reloj * 0.012 * (1 + k % 3)) % 1;
+    const a = (0.25 + 0.25 * Math.sin(reloj * 1.7 + k)) * (A.fase !== 'logo' ? 1 : clamp(1 - t / 1.2, 0, 1));
+    const r = 1.5 + (k % 4);
+    h.fillStyle = k % 3 ? `rgba(255,210,110,${a})` : `rgba(160,230,255,${a})`;
+    h.beginPath(); h.arc(sx * VW, (1 - sy) * VH, r, 0, TAU); h.fill();
+  }
+  h.restore();
+  if (A.fase !== 'logo') {
+    const v = h.createRadialGradient(cx, VH / 2, VH * 0.25, cx, VH / 2, VH * 0.85);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.6)');
+    h.fillStyle = v; h.fillRect(0, 0, VW, VH);
+    h.fillStyle = '#000'; h.fillRect(0, 0, VW, bandaMax); h.fillRect(0, VH - bandaMax, VW, bandaMax);
+  }
+  if (A.fase === 'espera') {   // splash: el sello de la luna se dibuja solo mientras esperamos la primera tecla
+    const te = A.te, R = SPLASH_RADIO;
+    selloSplash(te, 0);
+    texto('Un cuento del Bosque Sagrado', cx, VH / 2 + R + 50, 22, '#e7d6a6', 'center', 'italic', clamp((te - 2.6) / 1, 0, 1));
+    texto('Pulsa cualquier tecla', cx, VH - bandaMax - 34, 22, '#ffffff', 'center', 'normal', clamp((te - 3.4) / 0.8, 0, 1) * (0.6 + 0.4 * Math.sin(reloj * 2.5)));
+    texto('(mejor con sonido)', cx, VH - bandaMax / 2, 13, '#6f7f9a', 'center', 'italic', clamp(te - 3.6, 0, 1));
+    if (te < 1.5) { h.fillStyle = `rgba(2,4,10,${1 - te / 1.5})`; h.fillRect(0, 0, VW, VH); }
+    return;
+  }
+  if (A.fase === 'vuelo') {
+    if (t < 0.9) selloSplash(A.te + t, t / 0.9);   // el sello se abre y se desvanece al empezar
+    const i = Math.floor(t / APERTURA_FRASE), lt = t - i * APERTURA_FRASE;
+    if (i < FRASES_APERTURA.length) {
+      const a = clamp(Math.min(lt / 0.7, (APERTURA_FRASE - lt) / 0.6), 0, 1);
+      texto(FRASES_APERTURA[i], cx, VH - bandaMax - 44 - a * 6, 26, '#eaf3ff', 'center', 'italic', a);
+    }
+    texto('Enter: saltar la intro', VW - 24, VH - bandaMax / 2, 13, '#6f7f9a', 'right', 'normal', clamp(t - 1, 0, 1));
+    return;
+  }
+  // fase 'logo': se abren las bandas, estalla el título y aparece la pantalla de inicio
+  hudTitulo(clamp(t / 1.1, 0, 1), clamp((t - 1.6) / 1, 0, 1));
+  const banda = bandaMax * (1 - clamp(t / 0.8, 0, 1));
+  h.fillStyle = '#000'; h.fillRect(0, 0, VW, banda); h.fillRect(0, VH - banda, VW, banda);
+  const ty = VH * 0.26, eo = 1 - Math.pow(1 - clamp(t / 1.4, 0, 1), 3);
+  h.save(); h.globalCompositeOperation = 'lighter';
+  for (let k = 0; k < 70; k++) {   // chispas doradas que salen del título
+    const ang = k * 2.39996, d = (90 + (k * 37 % 100) * 4.5) * eo, a = clamp(1 - t / 1.8, 0, 1) * (0.5 + 0.5 * (k % 2));
+    h.fillStyle = k % 4 ? `rgba(255,205,90,${a})` : `rgba(255,255,235,${a})`;
+    h.beginPath(); h.arc(cx + Math.cos(ang) * d * 1.3, ty + Math.sin(ang) * d * 0.6, 1.5 + (k % 3), 0, TAU); h.fill();
+  }
+  h.restore();
+  if (t < 0.6) { h.fillStyle = `rgba(255,244,210,${0.85 * (1 - t / 0.6)})`; h.fillRect(0, 0, VW, VH); }
 }
 // Objetos de la bolsa: se consiguen en el pozo y se preparan en el mapa antes de entrar a un nivel
 const OBJETOS = {
@@ -3858,7 +4005,31 @@ function hudFin() {
 // =====================================================================
 // ESCENAS Y BUCLE PRINCIPAL
 // =====================================================================
-let escena = 'titulo', tEscena = 0, pausado = false, reloj = 0, pendSalto = false, pendGiro = false;
+let escena = 'apertura', tEscena = 0, pausado = false, reloj = 0, pendSalto = false, pendGiro = false;
+// Intro: 'espera' (pulsa una tecla) → 'vuelo' (historia y bajada de cámara) → 'logo' (estalla el título) → pantalla de título
+const apertura = { fase: 'espera', t: 0, te: 0, frase: -1, musica: false };
+function actualizarApertura(dt, e) {
+  const A = apertura;
+  if (A.fase === 'espera') {
+    A.te += dt;
+    if (e.okP) iniciarAudio();   // el mando no cuenta como gesto para el navegador; se intenta igual
+    if (actx) { A.fase = 'vuelo'; A.t = 0; sfx('apertura'); iniciarAmbiente('viento'); }
+    return;
+  }
+  A.t += dt;
+  const saltar = e.okP || e.atrasP;
+  if (A.fase === 'vuelo') {
+    const i = Math.floor(A.t / APERTURA_FRASE);
+    if (i !== A.frase && i < FRASES_APERTURA.length) { A.frase = i; sfx('frase', i); }
+    if (A.t >= FRASES_APERTURA.length * APERTURA_FRASE || saltar) { A.fase = 'logo'; A.t = 0; sfx('logo'); }
+    return;
+  }
+  if (!A.musica && A.t > 0.9) { A.musica = true; pararAmbiente(); tocarMusica('mapa'); }
+  if (A.t >= APERTURA_LOGO || (saltar && A.t > 0.3)) {
+    pararAmbiente(); tocarMusica('mapa');
+    escena = 'titulo'; tEscena = 0;
+  }
+}
 const fundido = { a: 1, dir: -1, accion: null };
 function cambiar(accion) { if (fundido.accion) return; fundido.accion = accion; fundido.dir = 1; }
 function actualizarFundido(dt) {
@@ -3967,6 +4138,10 @@ function actualizar(dt, e) {
   programarMusica();
   const libre = !fundido.accion && fundido.a < 0.6, ent = libre ? e : NADA;
   switch (escena) {
+    case 'apertura':
+      actualizarApertura(dt, ent);
+      actualizarHada(dt, mapa.x, 0, mapa.z); actualizarParts(dt);
+      break;
     case 'titulo':
       actualizarHada(dt, mapa.x, 0, mapa.z); actualizarParts(dt);
       if (ent.nuevaP && hayProgreso()) { borrarProgreso(); reiniciarSesion(); mapa.nodo = '1-1'; reiniciarMapa(); sfx('elegir'); cambiar(() => irAlMapa()); }
@@ -4009,9 +4184,10 @@ function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   h.setTransform(1, 0, 0, 1, 0, 0); h.clearRect(0, 0, hudL.width, hudL.height);
   h.setTransform(DPR * UI, 0, 0, DPR * UI, 0, 0);
-  if (escena === 'titulo' || escena === 'mapa') renderMapa();
+  if (escena === 'titulo' || escena === 'mapa' || escena === 'apertura') renderMapa();
   else if ((escena === 'juego' || escena === 'final') && nivel) renderNivel();
-  if (escena === 'titulo') hudTitulo();
+  if (escena === 'apertura') hudApertura();
+  else if (escena === 'titulo') hudTitulo();
   else if (escena === 'mapa') hudMapa();
   else if (escena === 'intro') hudIntro();
   else if (escena === 'juego') { hudJuego(); if (pausado) hudPausa(); }
@@ -4038,7 +4214,7 @@ construirMapa();
 mapa.nodo = progreso.nodo;
 reiniciarMapa();
 gl.enable(gl.DEPTH_TEST);
-tocarMusica('mapa');   // empieza a sonar con la primera tecla (los navegadores lo exigen)
+// la música la arranca la intro tras la primera tecla (los navegadores lo exigen)
 requestAnimationFrame(bucle);
 </script>
 </body>
